@@ -70,7 +70,7 @@ export const MergeReportModal: React.FC<MergeReportModalProps> = ({
           className="w-full sm:w-auto px-5 py-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-sm flex items-center justify-center gap-2 transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
-          <span>Merge Another</span>
+          <span>Merge More Files</span>
         </button>
       </div>
 

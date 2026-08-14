@@ -44,12 +44,19 @@ export async function getSql(): Promise<SqlJsStatic> {
       try {
         const nodeFs = await (Function('return import("fs")')());
         const nodePath = await (Function('return import("path")')());
-        const wasmPath = nodePath.resolve(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
-        if (nodeFs.existsSync(wasmPath)) {
-          const wasmBinary = nodeFs.readFileSync(wasmPath);
-          return await initSqlJs({
-            wasmBinary: new Uint8Array(wasmBinary).buffer as ArrayBuffer
-          });
+        const candidates = [
+          nodePath.resolve(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
+          nodePath.resolve(process.cwd(), 'jwlibrary-merge-web', 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
+          nodePath.resolve(process.cwd(), 'jwlibrary-merge-web', 'public', 'sql-wasm.wasm'),
+          'D:/CURSOR PROJECTS/claude-jw/jwlibrary-merge-web/public/sql-wasm.wasm'
+        ];
+        for (const p of candidates) {
+          if (nodeFs.existsSync(p)) {
+            const wasmBinary = nodeFs.readFileSync(p);
+            return await initSqlJs({
+              wasmBinary: new Uint8Array(wasmBinary).buffer as ArrayBuffer
+            });
+          }
         }
       } catch (e) {
         // fallback

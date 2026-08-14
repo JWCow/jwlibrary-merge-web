@@ -136,14 +136,22 @@ export const MergerPage: React.FC = () => {
 
       {/* Main Workflow Area */}
       {result ? (
-        <MergeReportModal
-          result={result}
-          backups={backups}
-          onReset={() => {
-            setResult(null);
-            setProgress({ stage: 'idle', percent: 0, message: '' });
-          }}
-        />
+        <div className="space-y-6">
+          <MergeReportModal
+            result={result}
+            backups={backups}
+            onReset={() => {
+              setResult(null);
+              setProgress({ stage: 'idle', percent: 0, message: '' });
+            }}
+          />
+          <div className="pt-2">
+            <h3 className="text-xs uppercase font-bold tracking-wider text-slate-400 mb-3 text-center">
+              Want to merge another set of backups?
+            </h3>
+            <DropZone onFilesLoaded={handleFilesLoaded} isLoading={isMerging} />
+          </div>
+        </div>
       ) : isMerging ? (
         <MergeProgress progress={progress} logs={mergeLogs} />
       ) : (
