@@ -127,41 +127,120 @@ export async function mergeBackups(
             const specialty = locCols.includes('Specialty') ? row[locCols.indexOf('Specialty')] : null;
             const edition = locCols.includes('Edition') ? row[locCols.indexOf('Edition')] : null;
 
-            const findLoc = destDb.prepare(`
-              SELECT LocationId FROM Location 
-              WHERE (BookNumber IS ? OR (BookNumber IS NULL AND ? IS NULL))
-                AND (ChapterNumber IS ? OR (ChapterNumber IS NULL AND ? IS NULL))
-                AND (DocumentId IS ? OR (DocumentId IS NULL AND ? IS NULL))
-                AND (Track IS ? OR (Track IS NULL AND ? IS NULL))
-                AND (IssueTagNumber IS ? OR (IssueTagNumber IS NULL AND ? IS NULL))
-                AND (KeySymbol IS ? OR (KeySymbol IS NULL AND ? IS NULL))
-                AND (MepsLanguage IS ? OR (MepsLanguage IS NULL AND ? IS NULL))
-                AND (Type IS ? OR (Type IS NULL AND ? IS NULL))
-                AND (Title IS ? OR (Title IS NULL AND ? IS NULL))
-              LIMIT 1
-            `);
-            findLoc.bind([book, book, chap, chap, doc, doc, track, track, issue, issue, symbol, symbol, lang, lang, type, type, title, title]);
+            let matchedId: number | null = null;
 
-            if (findLoc.step()) {
-              locationMap.set(locId, findLoc.get()[0] as number);
+            // 1. Bible chapter/verse match
+            if (book !== null && book !== undefined && chap !== null && chap !== undefined) {
+              const q = destDb.prepare(`
+                SELECT LocationId FROM Location 
+                WHERE BookNumber = ? AND ChapterNumber = ? 
+                  AND (KeySymbol IS ? OR (KeySymbol IS NULL AND ? IS NULL))
+                  AND (MepsLanguage IS ? OR (MepsLanguage IS NULL AND ? IS NULL))
+                  AND (Type IS ? OR (Type IS NULL AND ? IS NULL))
+                LIMIT 1
+              `);
+              q.bind([book, chap, symbol, symbol, lang, lang, type, type]);
+              if (q.step()) {
+                matchedId = q.get()[0] as number;
+              }
+              q.free();
+            }
+
+            // 2. Publication document match
+            if (matchedId === null && doc !== null && doc !== undefined) {
+              const q = destDb.prepare(`
+                SELECT LocationId FROM Location 
+                WHERE DocumentId = ? 
+                  AND (IssueTagNumber IS ? OR (IssueTagNumber IS NULL AND ? IS NULL))
+                  AND (KeySymbol IS ? OR (KeySymbol IS NULL AND ? IS NULL))
+                  AND (MepsLanguage IS ? OR (MepsLanguage IS NULL AND ? IS NULL))
+                  AND (Type IS ? OR (Type IS NULL AND ? IS NULL))
+                LIMIT 1
+              `);
+              q.bind([doc, issue, issue, symbol, symbol, lang, lang, type, type]);
+              if (q.step()) {
+                matchedId = q.get()[0] as number;
+              }
+              q.free();
+            }
+
+            // 3. Audio / track match
+            if (matchedId === null && track !== null && track !== undefined) {
+              const q = destDb.prepare(`
+                SELECT LocationId FROM Location 
+                WHERE Track = ? 
+                  AND (KeySymbol IS ? OR (KeySymbol IS NULL AND ? IS NULL))
+                  AND (MepsLanguage IS ? OR (MepsLanguage IS NULL AND ? IS NULL))
+                  AND (Type IS ? OR (Type IS NULL AND ? IS NULL))
+                LIMIT 1
+              `);
+              q.bind([track, symbol, symbol, lang, lang, type, type]);
+              if (q.step()) {
+                matchedId = q.get()[0] as number;
+              }
+              q.free();
+            }
+
+            // 4. Exact all-fields match
+            if (matchedId === null) {
+              const qAll = destDb.prepare(`
+                SELECT LocationId FROM Location 
+                WHERE (BookNumber IS ? OR (BookNumber IS NULL AND ? IS NULL))
+                  AND (ChapterNumber IS ? OR (ChapterNumber IS NULL AND ? IS NULL))
+                  AND (DocumentId IS ? OR (DocumentId IS NULL AND ? IS NULL))
+                  AND (Track IS ? OR (Track IS NULL AND ? IS NULL))
+                  AND (IssueTagNumber IS ? OR (IssueTagNumber IS NULL AND ? IS NULL))
+                  AND (KeySymbol IS ? OR (KeySymbol IS NULL AND ? IS NULL))
+                  AND (MepsLanguage IS ? OR (MepsLanguage IS NULL AND ? IS NULL))
+                  AND (Type IS ? OR (Type IS NULL AND ? IS NULL))
+                LIMIT 1
+              `);
+              qAll.bind([book, book, chap, chap, doc, doc, track, track, issue, issue, symbol, symbol, lang, lang, type, type]);
+              if (qAll.step()) {
+                matchedId = qAll.get()[0] as number;
+              }
+              qAll.free();
+            }
+
+            if (matchedId !== null) {
+              locationMap.set(locId, matchedId);
             } else {
+              // Insert with OR IGNORE
               if (hasSpecialty && hasEdition) {
                 destDb.run(`
-                  INSERT INTO Location (BookNumber, ChapterNumber, DocumentId, Track, IssueTagNumber, KeySymbol, MepsLanguage, Type, Title, Specialty, Edition)
+                  INSERT OR IGNORE INTO Location (BookNumber, ChapterNumber, DocumentId, Track, IssueTagNumber, KeySymbol, MepsLanguage, Type, Title, Specialty, Edition)
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [book, chap, doc, track, issue, symbol, lang, type, title, specialty, edition]);
               } else {
                 destDb.run(`
-                  INSERT INTO Location (BookNumber, ChapterNumber, DocumentId, Track, IssueTagNumber, KeySymbol, MepsLanguage, Type, Title)
+                  INSERT OR IGNORE INTO Location (BookNumber, ChapterNumber, DocumentId, Track, IssueTagNumber, KeySymbol, MepsLanguage, Type, Title)
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [book, chap, doc, track, issue, symbol, lang, type, title]);
               }
 
-              const newLocId = destDb.exec('SELECT last_insert_rowid()')[0].values[0][0] as number;
-              locationMap.set(locId, newLocId);
-              stats.locationsAdded++;
+              const newLocId = destDb.exec('SELECT last_insert_rowid()')[0]?.values[0]?.[0] as number;
+              if (newLocId && newLocId > 0) {
+                locationMap.set(locId, newLocId);
+                stats.locationsAdded++;
+              } else {
+                // If collision occurred and was ignored, find any matching row
+                const fallback = destDb.prepare(`
+                  SELECT LocationId FROM Location 
+                  WHERE (KeySymbol IS ? OR (KeySymbol IS NULL AND ? IS NULL))
+                    AND (MepsLanguage IS ? OR (MepsLanguage IS NULL AND ? IS NULL))
+                    AND (Type IS ? OR (Type IS NULL AND ? IS NULL))
+                    AND ((BookNumber = ? AND ChapterNumber = ?) OR (DocumentId = ?) OR (Track = ?))
+                  LIMIT 1
+                `);
+                fallback.bind([symbol, symbol, lang, lang, type, type, book, chap, doc, track]);
+                if (fallback.step()) {
+                  locationMap.set(locId, fallback.get()[0] as number);
+                } else {
+                  locationMap.set(locId, 1);
+                }
+                fallback.free();
+              }
             }
-            findLoc.free();
           }
         }
 
