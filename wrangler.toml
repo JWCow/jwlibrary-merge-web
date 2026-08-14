@@ -1,3 +1,6 @@
-name = "jwlibrary-merge"
+name = "jwlibrary-merge-web"
 compatibility_date = "2024-08-01"
 pages_build_output_dir = "dist"
+
+[assets]
+directory = "./dist"
