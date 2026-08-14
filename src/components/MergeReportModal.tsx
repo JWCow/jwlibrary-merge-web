@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { 
   Download, 
   CheckCircle2, 
@@ -7,7 +8,8 @@ import {
   Bookmark, 
   Sparkles, 
   RotateCcw, 
-  HelpCircle
+  HelpCircle,
+  Search
 } from 'lucide-react';
 import type { MergeResult } from '../lib/merge';
 import type { BackupMetadata } from '../lib/types';
@@ -52,7 +54,7 @@ export const MergeReportModal: React.FC<MergeReportModalProps> = ({
         </p>
       </div>
 
-      {/* Main Download Button */}
+      {/* Main Download Button & Actions */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
         <button
           onClick={handleDownload}
@@ -64,6 +66,14 @@ export const MergeReportModal: React.FC<MergeReportModalProps> = ({
             {formatMB(result.mergedBlob.size)} MB
           </span>
         </button>
+
+        <Link
+          to="/inspect"
+          className="w-full sm:w-auto px-5 py-4 rounded-xl border border-theocratic-200 dark:border-theocratic-800 bg-theocratic-50/50 dark:bg-theocratic-950/40 hover:bg-theocratic-100 dark:hover:bg-theocratic-900/60 text-theocratic-700 dark:text-theocratic-300 font-medium text-sm flex items-center justify-center gap-2 transition-colors"
+        >
+          <Search className="w-4 h-4" />
+          <span>Inspect Database</span>
+        </Link>
 
         <button
           onClick={onReset}

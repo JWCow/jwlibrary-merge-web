@@ -34,17 +34,41 @@ export const MergerPage: React.FC = () => {
   const [isMerging, setIsMerging] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
+  const generateSmartFileName = (list: BackupMetadata[]) => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (list.length === 0) return `jwlibrary-merged-${today}.jwlibrary`;
+    
+    const devices = list.map(b => {
+      const combined = `${b.deviceName} ${b.fileName}`.toLowerCase();
+      if (combined.includes('ipad')) return 'iPad';
+      if (combined.includes('iphone')) return 'iPhone';
+      if (combined.includes('icevube')) return 'PC';
+      if (combined.includes('desktop') || combined.includes('windows')) return 'PC';
+      if (combined.includes('mac')) return 'Mac';
+      if (combined.includes('android')) return 'Android';
+      return b.deviceName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'Device';
+    });
+    const unique = Array.from(new Set(devices));
+    return `jwlibrary-merged-${unique.join('-')}-${today}.jwlibrary`;
+  };
+
   const handleFilesLoaded = (newBackups: BackupMetadata[]) => {
     setBackups(prev => {
       const existing = new Set(prev.map(b => `${b.fileName}-${b.fileSize}`));
       const filtered = newBackups.filter(b => !existing.has(`${b.fileName}-${b.fileSize}`));
-      return [...prev, ...filtered];
+      const combined = [...prev, ...filtered];
+      setOutputFileName(generateSmartFileName(combined));
+      return combined;
     });
     setResult(null);
   };
 
   const handleRemoveBackup = (id: string) => {
-    setBackups(prev => prev.filter(b => b.id !== id));
+    setBackups(prev => {
+      const filtered = prev.filter(b => b.id !== id);
+      setOutputFileName(generateSmartFileName(filtered));
+      return filtered;
+    });
     setResult(null);
   };
 

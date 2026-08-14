@@ -8,6 +8,9 @@ import {
   ArrowUp, 
   ArrowDown, 
   Smartphone, 
+  Tablet,
+  Monitor,
+  Laptop,
   Calendar, 
   HardDrive, 
   ChevronDown, 
@@ -59,6 +62,29 @@ export const BackupCard: React.FC<BackupCardProps> = ({
     }
   };
 
+  const getDeviceDetails = (name: string, filename: string) => {
+    const combined = `${name} ${filename}`.toLowerCase();
+    if (combined.includes('ipad')) {
+      return { icon: Tablet, label: 'iPad', color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 dark:text-indigo-300' };
+    }
+    if (combined.includes('iphone') || combined.includes('ios')) {
+      return { icon: Smartphone, label: 'iPhone', color: 'text-sky-600 bg-sky-50 dark:bg-sky-950/60 dark:text-sky-300' };
+    }
+    if (combined.includes('mac') || combined.includes('macbook')) {
+      return { icon: Laptop, label: 'Mac', color: 'text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300' };
+    }
+    if (combined.includes('pc') || combined.includes('desktop') || combined.includes('icevube') || combined.includes('windows')) {
+      return { icon: Monitor, label: 'Windows PC', color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-300' };
+    }
+    if (combined.includes('android') || combined.includes('samsung') || combined.includes('pixel')) {
+      return { icon: Smartphone, label: 'Android', color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300' };
+    }
+    return { icon: Smartphone, label: 'Device', color: 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-400' };
+  };
+
+  const devInfo = getDeviceDetails(backup.deviceName, backup.fileName);
+  const DeviceIcon = devInfo.icon;
+
   return (
     <div className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
       isPrimary
@@ -70,12 +96,12 @@ export const BackupCard: React.FC<BackupCardProps> = ({
           
           {/* File info */}
           <div className="flex items-start gap-3 min-w-0">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
               isPrimary
                 ? 'bg-theocratic-100 dark:bg-theocratic-950/80 text-theocratic-600 dark:text-theocratic-300'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
             }`}>
-              <Smartphone className="w-5 h-5" />
+              <DeviceIcon className="w-5 h-5" />
             </div>
 
             <div className="min-w-0 flex-1">
@@ -83,6 +109,11 @@ export const BackupCard: React.FC<BackupCardProps> = ({
                 <span className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">
                   {backup.deviceName || 'JW Library Device'}
                 </span>
+                
+                <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border border-current/20 ${devInfo.color}`}>
+                  {devInfo.label}
+                </span>
+
                 {isPrimary ? (
                   <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-theocratic-100 dark:bg-theocratic-950/90 text-theocratic-700 dark:text-theocratic-300 border border-theocratic-200 dark:border-theocratic-800/80 flex items-center gap-1">
                     <Sparkles className="w-3 h-3" /> Base Template
@@ -201,7 +232,7 @@ export const BackupCard: React.FC<BackupCardProps> = ({
 
         {expanded && (
           <div className="mt-3 p-3 rounded-xl bg-slate-100/70 dark:bg-slate-800/70 text-xs font-mono text-slate-600 dark:text-slate-300 space-y-1">
-            <div><strong>Schema Version:</strong> {backup.schemaVersion}</div>
+            <div><strong>Schema Version:</strong> v{backup.schemaVersion}</div>
             <div><strong>Block Ranges:</strong> {backup.counts.BlockRange?.toLocaleString()}</div>
             <div><strong>Tag Mappings:</strong> {backup.counts.TagMap?.toLocaleString()}</div>
             <div><strong>Input Fields:</strong> {backup.counts.InputField?.toLocaleString() || 0}</div>
