@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { DropZone } from '../components/DropZone';
 import { BackupCard } from '../components/BackupCard';
 import { MergeProgress } from '../components/MergeProgress';
@@ -11,10 +11,11 @@ import {
   ArrowRight, 
   Trash2, 
   ShieldCheck, 
-  Cpu, 
   Lock, 
-  Zap, 
-  Info 
+  Info,
+  Loader2,
+  Highlighter,
+  Smartphone
 } from 'lucide-react';
 
 export const MergerPage: React.FC = () => {
@@ -31,10 +32,10 @@ export const MergerPage: React.FC = () => {
   const [mergeLogs, setMergeLogs] = useState<string[]>([]);
   const [result, setResult] = useState<MergeResult | null>(null);
   const [isMerging, setIsMerging] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   const handleFilesLoaded = (newBackups: BackupMetadata[]) => {
     setBackups(prev => {
-      // Prevent duplicates with same name and size
       const existing = new Set(prev.map(b => `${b.fileName}-${b.fileSize}`));
       const filtered = newBackups.filter(b => !existing.has(`${b.fileName}-${b.fileSize}`));
       return [...prev, ...filtered];
@@ -77,9 +78,14 @@ export const MergerPage: React.FC = () => {
 
   const handleStartMerge = async () => {
     if (backups.length < 2) return;
-    setIsMerging(true);
+    setIsStarting(true);
     setMergeLogs([]);
     setResult(null);
+
+    // Short micro-animation on the button before switching views
+    await new Promise((r) => setTimeout(r, 350));
+    setIsMerging(true);
+    setIsStarting(false);
 
     try {
       const finalFileName = outputFileName.endsWith('.jwlibrary') 
@@ -111,7 +117,7 @@ export const MergerPage: React.FC = () => {
       {/* Hero Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-theocratic-100 dark:bg-theocratic-950/80 text-theocratic-700 dark:text-theocratic-300 text-xs font-semibold border border-theocratic-200 dark:border-theocratic-800/80 shadow-sm">
-          <Sparkles className="w-3.5 h-3.5" /> Client-Side WebAssembly SQLite Merger
+          <Sparkles className="w-3.5 h-3.5" /> 100% In-Browser & Private • Fast Backup Merger
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
           Merge JW Library Backups
@@ -126,11 +132,11 @@ export const MergerPage: React.FC = () => {
         <div className="flex items-center gap-2.5">
           <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
           <span>
-            <strong>100% Private & In-Browser:</strong> Your backups are merged directly on your device using WebAssembly. No files are uploaded to any server.
+            <strong>100% Private on Your Device:</strong> Your backups are merged directly inside your browser. No files or notes are ever uploaded to any server.
           </span>
         </div>
         <div className="flex items-center gap-1.5 font-mono text-xs bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-1 rounded-lg">
-          <Lock className="w-3 h-3" /> Zero Server Transmission
+          <Lock className="w-3 h-3" /> Zero Server Uploads
         </div>
       </div>
 
@@ -211,18 +217,27 @@ export const MergerPage: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                   <div className="text-xs text-slate-500 flex items-center gap-1.5">
-                    <Info className="w-4 h-4 text-theocratic-500" />
-                    <span>Auto-heals multi-paragraph highlight spans & solves note timestamp collisions.</span>
+                    <Info className="w-4 h-4 text-theocratic-500 flex-shrink-0" />
+                    <span>Safely combines all highlights, notes, bookmarks, and tags from all devices.</span>
                   </div>
 
                   <button
                     onClick={handleStartMerge}
-                    disabled={backups.length < 2 || isMerging}
-                    className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-theocratic-600 to-theocratic-500 hover:from-theocratic-700 hover:to-theocratic-600 disabled:opacity-40 disabled:pointer-events-none text-white font-bold text-sm shadow-lg shadow-theocratic-500/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    disabled={backups.length < 2 || isMerging || isStarting}
+                    className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-theocratic-600 via-theocratic-500 to-emerald-600 hover:from-theocratic-700 hover:to-emerald-700 disabled:opacity-40 disabled:pointer-events-none text-white font-bold text-sm shadow-xl shadow-theocratic-500/25 flex items-center justify-center gap-2.5 transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    <Layers className="w-4 h-4" />
-                    <span>Merge {backups.length} Backups</span>
-                    <ArrowRight className="w-4 h-4" />
+                    {isStarting || isMerging ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Starting Merge...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Layers className="w-4 h-4" />
+                        <span>Merge {backups.length} Backups</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -233,35 +248,35 @@ export const MergerPage: React.FC = () => {
         </div>
       )}
 
-      {/* 3 Core Features Explanation */}
+      {/* Friendly Feature Highlights */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
-          <div className="w-8 h-8 rounded-lg bg-theocratic-100 dark:bg-theocratic-950 text-theocratic-600 dark:text-theocratic-400 flex items-center justify-center">
-            <Cpu className="w-4 h-4" />
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+          <div className="w-9 h-9 rounded-xl bg-theocratic-100 dark:bg-theocratic-950 text-theocratic-600 dark:text-theocratic-300 flex items-center justify-center">
+            <Lock className="w-4 h-4" />
           </div>
-          <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">WebAssembly SQLite</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Executes native SQLite union queries directly inside your browser memory for sub-second merges.
+          <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">100% Private</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            Runs directly on your computer or phone. Your personal study notes are never uploaded or stored anywhere.
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
-          <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-            <Zap className="w-4 h-4" />
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+          <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 flex items-center justify-center">
+            <Highlighter className="w-4 h-4" />
           </div>
-          <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">Highlight Span Healing</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Avoids third-party truncation bugs by preserving all BlockRanges spanning multiple paragraphs or verses.
+          <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">Zero Lost Notes</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            All your highlights, study notes, tags, and bookmarks are seamlessly unified into one clean backup.
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
-          <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-            <ShieldCheck className="w-4 h-4" />
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+          <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-300 flex items-center justify-center">
+            <Smartphone className="w-4 h-4" />
           </div>
-          <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">SHA-256 Validation</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Generates precise cryptographic hash and strict ZIP manifest structure required by the JW Library app.
+          <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">All Devices Supported</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            Easily combine backups from your iPad, iPhone, Android tablet, and Windows laptop.
           </p>
         </div>
       </div>
