@@ -1,0 +1,28 @@
+name: 🐛 Bug Report
+description: Report a broken backup merge, highlight issue, or error
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to report an issue with the JW Library Backup Merger!
+  - type: input
+    id: devices
+    attributes:
+      label: Devices Involved
+      description: What devices created the backups? (e.g. iPad 10th Gen, iPhone 14 Pro, Windows 11 PC)
+      placeholder: e.g., iPad Air (iPadOS 17) + iPhone 15 (iOS 17)
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug or unexpected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: console-errors
+    attributes:
+      label: Browser Console Log / Error Message
+      description: Paste any error messages displayed on the screen or in DevTools (F12) console.
+      render: shell
