@@ -10,6 +10,21 @@ export interface MergeResult {
   log: string[];
 }
 
+function getTableColumns(db: any, tableName: string): Set<string> {
+  const cols = new Set<string>();
+  try {
+    const res = db.exec(`PRAGMA table_info("${tableName}")`);
+    if (res.length > 0) {
+      for (const row of res[0].values) {
+        cols.add(row[1] as string);
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return cols;
+}
+
 export async function mergeBackups(
   backups: BackupMetadata[],
   outputFileName = 'merged-backup.jwlibrary',
@@ -29,8 +44,19 @@ export async function mergeBackups(
 
   const SQL = await getSql();
 
-  // Initialize destination DB with a clone of the first backup database
-  const destDbBytes = new Uint8Array(backups[0].userDataDbBytes);
+  // Sort backups so that the backup with the highest schemaVersion (and newest date) serves as base
+  const sortedBackups = [...backups].sort((a, b) => {
+    if (b.schemaVersion !== a.schemaVersion) {
+      return b.schemaVersion - a.schemaVersion;
+    }
+    return (b.lastModifiedDate || '').localeCompare(a.lastModifiedDate || '');
+  });
+
+  const baseBackup = sortedBackups[0];
+  addLog(`Selected base template: ${baseBackup.fileName} (Schema v${baseBackup.schemaVersion}, Device: ${baseBackup.deviceName})`);
+
+  // Initialize destination DB with a clone of the base backup database
+  const destDbBytes = new Uint8Array(baseBackup.userDataDbBytes);
   const destDb = new SQL.Database(destDbBytes);
 
   const stats: MergeStatsChange = {
@@ -44,12 +70,15 @@ export async function mergeBackups(
     locationsAdded: 0
   };
 
-  let maxLastModified = backups[0].lastModifiedDate || new Date().toISOString();
+  let maxLastModified = baseBackup.lastModifiedDate || new Date().toISOString();
+
+  // Collect any extra media files across all backups
+  const allExtraFiles = new Map<string, Uint8Array>();
 
   try {
-    for (let i = 1; i < backups.length; i++) {
-      const srcBackup = backups[i];
-      const stepPercent = Math.floor(20 + (i / backups.length) * 60);
+    for (let i = 1; i < sortedBackups.length; i++) {
+      const srcBackup = sortedBackups[i];
+      const stepPercent = Math.floor(20 + (i / sortedBackups.length) * 60);
       onProgress?.({
         stage: 'merging',
         percent: stepPercent,
@@ -60,22 +89,21 @@ export async function mergeBackups(
       const srcDb = new SQL.Database(srcBackup.userDataDbBytes);
 
       try {
-        // Track latest LastModified date
         if (srcBackup.lastModifiedDate && srcBackup.lastModifiedDate > maxLastModified) {
           maxLastModified = srcBackup.lastModifiedDate;
         }
 
+        const destLocationCols = getTableColumns(destDb, 'Location');
+        const hasSpecialty = destLocationCols.has('Specialty');
+        const hasEdition = destLocationCols.has('Edition');
+
         // 1. Merge Locations & Build Map (oldLocationId -> newLocationId)
         const locationMap = new Map<number, number>();
-        const srcLocationsRes = srcDb.exec(`
-          SELECT LocationId, BookNumber, ChapterNumber, DocumentId, Track, IssueTagNumber, 
-                 KeySymbol, MepsLanguage, Type, Title 
-          FROM Location
-        `);
+        const srcLocRes = srcDb.exec('SELECT * FROM Location');
 
-        if (srcLocationsRes.length > 0) {
-          const locCols = srcLocationsRes[0].columns;
-          for (const row of srcLocationsRes[0].values) {
+        if (srcLocRes.length > 0) {
+          const locCols = srcLocRes[0].columns;
+          for (const row of srcLocRes[0].values) {
             const locId = row[locCols.indexOf('LocationId')] as number;
             const book = row[locCols.indexOf('BookNumber')];
             const chap = row[locCols.indexOf('ChapterNumber')];
@@ -86,8 +114,9 @@ export async function mergeBackups(
             const lang = row[locCols.indexOf('MepsLanguage')];
             const type = row[locCols.indexOf('Type')];
             const title = row[locCols.indexOf('Title')];
+            const specialty = locCols.includes('Specialty') ? row[locCols.indexOf('Specialty')] : null;
+            const edition = locCols.includes('Edition') ? row[locCols.indexOf('Edition')] : null;
 
-            // Match location in destination
             const findLoc = destDb.prepare(`
               SELECT LocationId FROM Location 
               WHERE (BookNumber IS ? OR (BookNumber IS NULL AND ? IS NULL))
@@ -101,22 +130,25 @@ export async function mergeBackups(
                 AND (Title IS ? OR (Title IS NULL AND ? IS NULL))
               LIMIT 1
             `);
-            
             findLoc.bind([book, book, chap, chap, doc, doc, track, track, issue, issue, symbol, symbol, lang, lang, type, type, title, title]);
-            
+
             if (findLoc.step()) {
-              const matchedId = findLoc.get()[0] as number;
-              locationMap.set(locId, matchedId);
+              locationMap.set(locId, findLoc.get()[0] as number);
             } else {
-              // Insert new Location
-              destDb.run(`
-                INSERT INTO Location (BookNumber, ChapterNumber, DocumentId, Track, IssueTagNumber, KeySymbol, MepsLanguage, Type, Title)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-              `, [book, chap, doc, track, issue, symbol, lang, type, title]);
-              
-              const newIdRes = destDb.exec('SELECT last_insert_rowid()');
-              const newId = newIdRes[0].values[0][0] as number;
-              locationMap.set(locId, newId);
+              if (hasSpecialty && hasEdition) {
+                destDb.run(`
+                  INSERT INTO Location (BookNumber, ChapterNumber, DocumentId, Track, IssueTagNumber, KeySymbol, MepsLanguage, Type, Title, Specialty, Edition)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [book, chap, doc, track, issue, symbol, lang, type, title, specialty, edition]);
+              } else {
+                destDb.run(`
+                  INSERT INTO Location (BookNumber, ChapterNumber, DocumentId, Track, IssueTagNumber, KeySymbol, MepsLanguage, Type, Title)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [book, chap, doc, track, issue, symbol, lang, type, title]);
+              }
+
+              const newLocId = destDb.exec('SELECT last_insert_rowid()')[0].values[0][0] as number;
+              locationMap.set(locId, newLocId);
               stats.locationsAdded++;
             }
             findLoc.free();
@@ -125,14 +157,13 @@ export async function mergeBackups(
 
         // 2. Merge Tags & Build Map (oldTagId -> newTagId)
         const tagMap = new Map<number, number>();
-        const srcTagsRes = srcDb.exec('SELECT TagId, Type, Name, ImageFilename FROM Tag');
+        const srcTagsRes = srcDb.exec('SELECT * FROM Tag');
         if (srcTagsRes.length > 0) {
           const tagCols = srcTagsRes[0].columns;
           for (const row of srcTagsRes[0].values) {
             const tagId = row[tagCols.indexOf('TagId')] as number;
             const type = row[tagCols.indexOf('Type')];
             const name = row[tagCols.indexOf('Name')];
-            const img = row[tagCols.indexOf('ImageFilename')];
 
             const findTag = destDb.prepare('SELECT TagId FROM Tag WHERE Type = ? AND Name = ? LIMIT 1');
             findTag.bind([type, name]);
@@ -140,7 +171,7 @@ export async function mergeBackups(
             if (findTag.step()) {
               tagMap.set(tagId, findTag.get()[0] as number);
             } else {
-              destDb.run('INSERT INTO Tag (Type, Name, ImageFilename) VALUES (?, ?, ?)', [type, name, img]);
+              destDb.run('INSERT INTO Tag (Type, Name) VALUES (?, ?)', [type, name]);
               const newTagId = destDb.exec('SELECT last_insert_rowid()')[0].values[0][0] as number;
               tagMap.set(tagId, newTagId);
             }
@@ -148,14 +179,14 @@ export async function mergeBackups(
           }
         }
 
-        // 3. Merge UserMarks & UserMarkId Map (oldUserMarkId -> destUserMarkId)
+        // 3. Merge UserMarks & Build Map (oldUserMarkId -> destUserMarkId)
         const markMap = new Map<number, number>();
-        const srcMarksRes = srcDb.exec('SELECT UserMarkId, Hash, LocationId, StyleIndex, UserMarkGuid, Version FROM UserMark');
+        const srcMarksRes = srcDb.exec('SELECT * FROM UserMark');
         if (srcMarksRes.length > 0) {
           const markCols = srcMarksRes[0].columns;
           for (const row of srcMarksRes[0].values) {
             const markId = row[markCols.indexOf('UserMarkId')] as number;
-            const hash = row[markCols.indexOf('Hash')];
+            const colorIndex = row[markCols.indexOf('ColorIndex')];
             const locId = row[markCols.indexOf('LocationId')] as number;
             const style = row[markCols.indexOf('StyleIndex')];
             const guid = row[markCols.indexOf('UserMarkGuid')] as string;
@@ -170,9 +201,9 @@ export async function mergeBackups(
               markMap.set(markId, findMark.get()[0] as number);
             } else {
               destDb.run(`
-                INSERT INTO UserMark (Hash, LocationId, StyleIndex, UserMarkGuid, Version)
+                INSERT INTO UserMark (ColorIndex, LocationId, StyleIndex, UserMarkGuid, Version)
                 VALUES (?, ?, ?, ?, ?)
-              `, [hash, mappedLocId, style, guid, version]);
+              `, [colorIndex, mappedLocId, style, guid, version]);
               const newMarkId = destDb.exec('SELECT last_insert_rowid()')[0].values[0][0] as number;
               markMap.set(markId, newMarkId);
             }
@@ -180,14 +211,14 @@ export async function mergeBackups(
           }
         }
 
-        // 4. Merge BlockRanges with Multi-Block Range Healing!
+        // 4. Merge BlockRanges & Multi-Block Highlight Healing
         onProgress?.({
           stage: 'healing',
           percent: stepPercent + 5,
           message: `Preserving and healing multi-paragraph highlights for ${srcBackup.fileName}...`
         });
 
-        const srcRangesRes = srcDb.exec('SELECT BlockRangeId, BlockType, Identifier, StartToken, EndToken, UserMarkId FROM BlockRange');
+        const srcRangesRes = srcDb.exec('SELECT * FROM BlockRange');
         if (srcRangesRes.length > 0) {
           const rangeCols = srcRangesRes[0].columns;
           for (const row of srcRangesRes[0].values) {
@@ -220,9 +251,9 @@ export async function mergeBackups(
           }
         }
 
-        // 5. Merge Notes (Last-Modified Wins on collision)
+        // 5. Merge Notes (Last Modified Wins on collision)
         const noteMap = new Map<number, number>();
-        const srcNotesRes = srcDb.exec('SELECT NoteId, Guid, UserMarkId, LocationId, Title, Content, Created, LastModified, BlockType, BlockIdentifier FROM Note');
+        const srcNotesRes = srcDb.exec('SELECT * FROM Note');
         if (srcNotesRes.length > 0) {
           const noteCols = srcNotesRes[0].columns;
           for (const row of srcNotesRes[0].values) {
@@ -247,7 +278,6 @@ export async function mergeBackups(
               const [destNoteId, destLastModified] = findNote.get() as [number, string];
               noteMap.set(noteId, destNoteId);
 
-              // If source note is strictly newer, update destination note
               if (lastModified && (!destLastModified || lastModified > destLastModified)) {
                 destDb.run(`
                   UPDATE Note SET 
@@ -258,7 +288,6 @@ export async function mergeBackups(
                 stats.notesUpdatedOnConflict++;
               }
             } else {
-              // Insert brand new note
               destDb.run(`
                 INSERT INTO Note (Guid, UserMarkId, LocationId, Title, Content, Created, LastModified, BlockType, BlockIdentifier)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -270,36 +299,41 @@ export async function mergeBackups(
           }
         }
 
-        // 6. Merge TagMap (Tags applied to Notes)
-        const srcTagMapRes = srcDb.exec('SELECT TagMapId, TagId, NoteId, Type, Position FROM TagMap');
+        // 6. Merge TagMap
+        const srcTagMapRes = srcDb.exec('SELECT * FROM TagMap');
         if (srcTagMapRes.length > 0) {
           const tmCols = srcTagMapRes[0].columns;
           for (const row of srcTagMapRes[0].values) {
-            const srcTagId = row[tmCols.indexOf('TagId')] as number;
-            const srcNoteId = row[tmCols.indexOf('NoteId')] as number;
-            const type = row[tmCols.indexOf('Type')];
+            const srcTagId = row[tmCols.indexOf('TagId')] as number | null;
+            const srcNoteId = tmCols.includes('NoteId') ? (row[tmCols.indexOf('NoteId')] as number | null) : null;
+            const srcLocId = tmCols.includes('LocationId') ? (row[tmCols.indexOf('LocationId')] as number | null) : null;
+            const srcPlId = tmCols.includes('PlaylistItemId') ? (row[tmCols.indexOf('PlaylistItemId')] as number | null) : null;
             const position = row[tmCols.indexOf('Position')];
 
-            const mappedTagId = tagMap.get(srcTagId) ?? srcTagId;
-            const mappedNoteId = noteMap.get(srcNoteId) ?? srcNoteId;
+            const mappedTagId = srcTagId ? (tagMap.get(srcTagId) ?? srcTagId) : null;
+            const mappedNoteId = srcNoteId ? (noteMap.get(srcNoteId) ?? srcNoteId) : null;
+            const mappedLocId = srcLocId ? (locationMap.get(srcLocId) ?? srcLocId) : null;
 
-            const findTm = destDb.prepare('SELECT TagMapId FROM TagMap WHERE TagId = ? AND NoteId = ? LIMIT 1');
-            findTm.bind([mappedTagId, mappedNoteId]);
+            if (mappedTagId && mappedNoteId) {
+              const findTm = destDb.prepare(`
+                SELECT TagMapId FROM TagMap 
+                WHERE TagId = ? AND NoteId = ? LIMIT 1
+              `);
+              findTm.bind([mappedTagId, mappedNoteId]);
 
-            if (!findTm.step()) {
-              destDb.run('INSERT INTO TagMap (TagId, NoteId, Type, Position) VALUES (?, ?, ?, ?)', [
-                mappedTagId,
-                mappedNoteId,
-                type,
-                position
-              ]);
+              if (!findTm.step()) {
+                destDb.run(`
+                  INSERT INTO TagMap (PlaylistItemId, LocationId, NoteId, TagId, Position)
+                  VALUES (?, ?, ?, ?, ?)
+                `, [srcPlId, mappedLocId, mappedNoteId, mappedTagId, position]);
+              }
+              findTm.free();
             }
-            findTm.free();
           }
         }
 
         // 7. Merge Bookmarks
-        const srcBkRes = srcDb.exec('SELECT BookmarkId, LocationId, PublicationLocationId, Slot, Title, Snippet, BlockType, BlockIdentifier FROM Bookmark');
+        const srcBkRes = srcDb.exec('SELECT * FROM Bookmark');
         if (srcBkRes.length > 0) {
           const bkCols = srcBkRes[0].columns;
           for (const row of srcBkRes[0].values) {
@@ -329,7 +363,7 @@ export async function mergeBackups(
 
         // 8. Merge InputFields
         try {
-          const srcInputRes = srcDb.exec('SELECT InputFieldId, LocationId, TextTag, Value FROM InputField');
+          const srcInputRes = srcDb.exec('SELECT * FROM InputField');
           if (srcInputRes.length > 0) {
             const ifCols = srcInputRes[0].columns;
             for (const row of srcInputRes[0].values) {
@@ -339,26 +373,77 @@ export async function mergeBackups(
 
               const mappedLocId = locationMap.get(locId) ?? locId;
 
-              const findIf = destDb.prepare('SELECT InputFieldId, Value FROM InputField WHERE LocationId = ? AND TextTag = ? LIMIT 1');
+              const findIf = destDb.prepare('SELECT Value FROM InputField WHERE LocationId = ? AND TextTag = ? LIMIT 1');
               findIf.bind([mappedLocId, textTag]);
 
               if (findIf.step()) {
-                const [destIfId, existingVal] = findIf.get() as [number, string | null];
+                const existingVal = findIf.get()[0] as string | null;
                 if ((!existingVal || existingVal.trim() === '') && value && String(value).trim() !== '') {
-                  destDb.run('UPDATE InputField SET Value = ? WHERE InputFieldId = ?', [value, destIfId]);
+                  destDb.run('UPDATE InputField SET Value = ? WHERE LocationId = ? AND TextTag = ?', [value, mappedLocId, textTag]);
                 }
               } else {
-                destDb.run('INSERT INTO InputField (LocationId, TextTag, Value) VALUES (?, ?, ?)', [
-                  mappedLocId,
-                  textTag,
-                  value
-                ]);
+                destDb.run('INSERT INTO InputField (LocationId, TextTag, Value) VALUES (?, ?, ?)', [mappedLocId, textTag, value]);
               }
               findIf.free();
             }
           }
         } catch (e) {
           // older schema without InputField table
+        }
+
+        // 9. Merge IndependentMedia
+        try {
+          const srcMediaRes = srcDb.exec('SELECT * FROM IndependentMedia');
+          if (srcMediaRes.length > 0) {
+            const medCols = srcMediaRes[0].columns;
+            for (const row of srcMediaRes[0].values) {
+              const filename = row[medCols.indexOf('OriginalFilename')];
+              const filepath = row[medCols.indexOf('FilePath')];
+              const mimetype = row[medCols.indexOf('MimeType')];
+              const hash = row[medCols.indexOf('Hash')];
+
+              const findMedia = destDb.prepare('SELECT IndependentMediaId FROM IndependentMedia WHERE Hash = ? OR FilePath = ? LIMIT 1');
+              findMedia.bind([hash, filepath]);
+
+              if (!findMedia.step()) {
+                destDb.run('INSERT INTO IndependentMedia (OriginalFilename, FilePath, MimeType, Hash) VALUES (?, ?, ?, ?)', [
+                  filename, filepath, mimetype, hash
+                ]);
+              }
+              findMedia.free();
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+
+        // 10. Merge PlaylistItem
+        try {
+          const srcPlRes = srcDb.exec('SELECT * FROM PlaylistItem');
+          if (srcPlRes.length > 0) {
+            const plCols = srcPlRes[0].columns;
+            for (const row of srcPlRes[0].values) {
+              const label = row[plCols.indexOf('Label')];
+              const startTrim = row[plCols.indexOf('StartTrimOffsetTicks')];
+              const endTrim = row[plCols.indexOf('EndTrimOffsetTicks')];
+              const accuracy = row[plCols.indexOf('Accuracy')];
+              const endAction = row[plCols.indexOf('EndAction')];
+              const thumb = row[plCols.indexOf('ThumbnailFilePath')];
+
+              const findPl = destDb.prepare('SELECT PlaylistItemId FROM PlaylistItem WHERE Label = ? LIMIT 1');
+              findPl.bind([label]);
+
+              if (!findPl.step()) {
+                destDb.run(`
+                  INSERT INTO PlaylistItem (Label, StartTrimOffsetTicks, EndTrimOffsetTicks, Accuracy, EndAction, ThumbnailFilePath)
+                  VALUES (?, ?, ?, ?, ?, ?)
+                `, [label, startTrim, endTrim, accuracy, endAction, thumb]);
+              }
+              findPl.free();
+            }
+          }
+        } catch (e) {
+          // ignore
         }
       } finally {
         srcDb.close();
@@ -370,7 +455,7 @@ export async function mergeBackups(
       destDb.run('DELETE FROM LastModified');
       destDb.run('INSERT INTO LastModified (LastModified) VALUES (?)', [maxLastModified]);
     } catch (e) {
-      // ignore if table doesn't exist
+      // ignore
     }
 
     // Compute totals in merged db
@@ -387,27 +472,24 @@ export async function mergeBackups(
     onProgress?.({ stage: 'hashing', percent: 85, message: 'Computing SHA-256 integrity hash...' });
     addLog('Exporting SQLite in-memory database and computing SHA-256 checksum...');
 
-    // Export database binary
     const mergedDbBytes = destDb.export();
 
     onProgress?.({ stage: 'repacking', percent: 92, message: 'Repacking .jwlibrary zip archive (manifest-first)...' });
     addLog('Repacking zip archive with manifest.json as primary entry...');
 
-    // Construct merged manifest
     const mergedManifest = {
-      ...backups[0].manifest,
+      ...baseBackup.manifest,
       name: outputFileName,
       creationDate: new Date().toISOString(),
       userDataBackup: {
-        ...backups[0].manifest.userDataBackup,
-        deviceName: `Merged (${backups.map(b => b.deviceName).join(' + ')})`.slice(0, 100),
+        ...baseBackup.manifest.userDataBackup,
+        deviceName: `Merged (${sortedBackups.map(b => b.deviceName).join(' + ')})`.slice(0, 100),
         lastModifiedDate: maxLastModified,
-        hash: '' // repackJWLibrary will compute and set exact SHA-256
+        hash: ''
       }
     };
 
-    // Repack into .jwlibrary archive
-    const mergedBlob = await repackJWLibrary(mergedManifest, mergedDbBytes);
+    const mergedBlob = await repackJWLibrary(mergedManifest, mergedDbBytes, allExtraFiles);
 
     onProgress?.({ stage: 'complete', percent: 100, message: 'Merge complete! Ready to download.' });
     addLog(`Merge completed successfully! Output size: ${(mergedBlob.size / (1024 * 1024)).toFixed(2)} MB`);
