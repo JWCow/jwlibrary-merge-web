@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4a6da7" />
+      <stop offset="100%" stop-color="#1e3a5f" />
+    </linearGradient>
+    <linearGradient id="sparkleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+  </defs>
+
+  <!-- App Rounded Container -->
+  <rect width="64" height="64" rx="14" fill="url(#bgGrad)" />
+  
+  <!-- Subtle Inner Border -->
+  <rect x="1" y="1" width="62" height="62" rx="13" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" />
+
+  <!-- Database Cylinders -->
+  <!-- Top Cap -->
+  <ellipse cx="32" cy="20" rx="17" ry="5.5" fill="#ffffff" fill-opacity="0.9" />
+  
+  <!-- Middle Tier -->
+  <path d="M15 20v8c0 3 7.6 5.5 17 5.5s17-2.5 17-5.5v-8" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+  <ellipse cx="32" cy="28" rx="17" ry="5.5" fill="#ffffff" fill-opacity="0.25" />
+
+  <!-- Bottom Tier -->
+  <path d="M15 28v8c0 3 7.6 5.5 17 5.5s17-2.5 17-5.5v-8" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+  <ellipse cx="32" cy="36" rx="17" ry="5.5" fill="#ffffff" fill-opacity="0.35" />
+
+  <!-- Bottom Cap Extension -->
+  <path d="M15 36v8c0 3 7.6 5.5 17 5.5s17-2.5 17-5.5v-8" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+
+  <!-- Sparkle Stars -->
+  <path d="M48 12l1.5 3.5L53 17l-3.5 1.5L48 22l-1.5-3.5L43 17l3.5-1.5z" fill="url(#sparkleGrad)" />
+  <path d="M14 44l1 2.5L17.5 47.5 15 48.5 14 51l-1-2.5-2.5-1 2.5-1z" fill="url(#goldGrad)" />
+</svg>
