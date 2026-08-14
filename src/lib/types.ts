@@ -39,6 +39,7 @@ export interface BackupMetadata {
   rawZipBytes: Uint8Array;
   userDataDbBytes: Uint8Array;
   manifest: JWLibraryManifest;
+  extraFiles: Map<string, Uint8Array>;
 }
 
 export interface MergeStatsChange {

@@ -72,8 +72,18 @@ export async function mergeBackups(
 
   let maxLastModified = baseBackup.lastModifiedDate || new Date().toISOString();
 
-  // Collect any extra media files across all backups
+  // Collect any extra media files across all backups (images, playlist thumbnails, etc.)
   const allExtraFiles = new Map<string, Uint8Array>();
+  for (const b of backups) {
+    if (b.extraFiles) {
+      for (const [name, bytes] of b.extraFiles.entries()) {
+        allExtraFiles.set(name, bytes);
+      }
+    }
+  }
+  if (allExtraFiles.size > 0) {
+    addLog(`Preserved ${allExtraFiles.size} attached media and thumbnail image(s).`);
+  }
 
   try {
     for (let i = 1; i < sortedBackups.length; i++) {

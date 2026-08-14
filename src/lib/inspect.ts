@@ -19,7 +19,7 @@ export async function inspectBackupFile(file: File): Promise<BackupMetadata> {
   const arrayBuffer = await file.arrayBuffer();
   const rawBytes = new Uint8Array(arrayBuffer);
   
-  const { manifest, userDataDbBytes } = await unpackJWLibrary(rawBytes);
+  const { manifest, userDataDbBytes, extraFiles } = await unpackJWLibrary(rawBytes);
 
   const SQL = await getSql();
   const db = new SQL.Database(userDataDbBytes);
@@ -75,7 +75,8 @@ export async function inspectBackupFile(file: File): Promise<BackupMetadata> {
       file,
       rawZipBytes: rawBytes,
       userDataDbBytes,
-      manifest
+      manifest,
+      extraFiles
     };
   } finally {
     db.close();
