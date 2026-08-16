@@ -88,13 +88,13 @@ export async function mergeBackups(
   try {
     for (let i = 1; i < sortedBackups.length; i++) {
       const srcBackup = sortedBackups[i];
-      const stepPercent = Math.floor(20 + (i / sortedBackups.length) * 60);
+      const stepPercent = Math.floor(15 + (i / sortedBackups.length) * 65);
       onProgress?.({
         stage: 'merging',
         percent: stepPercent,
         message: `Merging data from ${srcBackup.fileName} (${srcBackup.deviceName})...`
       });
-      addLog(`Processing Backup #${i + 1}: ${srcBackup.fileName} (${srcBackup.deviceName})`);
+      addLog(`Processing Backup #${i + 1}/${sortedBackups.length}: ${srcBackup.fileName} (Schema v${srcBackup.schemaVersion}, Device: ${srcBackup.deviceName})`);
 
       const srcDb = new SQL.Database(srcBackup.userDataDbBytes);
 
@@ -104,8 +104,6 @@ export async function mergeBackups(
         }
 
         const destLocationCols = getTableColumns(destDb, 'Location');
-        const hasSpecialty = destLocationCols.has('Specialty');
-        const hasEdition = destLocationCols.has('Edition');
 
         // 1. Merge Locations & Build Map (oldLocationId -> newLocationId)
         const locationMap = new Map<number, number>();
@@ -205,18 +203,19 @@ export async function mergeBackups(
             if (matchedId !== null) {
               locationMap.set(locId, matchedId);
             } else {
-              // Insert with OR IGNORE
-              if (hasSpecialty && hasEdition) {
-                destDb.run(`
-                  INSERT OR IGNORE INTO Location (BookNumber, ChapterNumber, DocumentId, Track, IssueTagNumber, KeySymbol, MepsLanguage, Type, Title, Specialty, Edition)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [book, chap, doc, track, issue, symbol, lang, type, title, specialty, edition]);
-              } else {
-                destDb.run(`
-                  INSERT OR IGNORE INTO Location (BookNumber, ChapterNumber, DocumentId, Track, IssueTagNumber, KeySymbol, MepsLanguage, Type, Title)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [book, chap, doc, track, issue, symbol, lang, type, title]);
+              // Dynamic schema-aware Location insertion
+              const insertCols = ['BookNumber', 'ChapterNumber', 'DocumentId', 'Track', 'IssueTagNumber', 'KeySymbol', 'MepsLanguage', 'Type', 'Title'];
+              const insertVals: any[] = [book, chap, doc, track, issue, symbol, lang, type, title];
+              if (destLocationCols.has('Specialty')) {
+                insertCols.push('Specialty');
+                insertVals.push(specialty);
               }
+              if (destLocationCols.has('Edition')) {
+                insertCols.push('Edition');
+                insertVals.push(edition);
+              }
+              const placeholders = insertCols.map(() => '?').join(', ');
+              destDb.run(`INSERT OR IGNORE INTO Location (${insertCols.join(', ')}) VALUES (${placeholders})`, insertVals);
 
               const newLocId = destDb.exec('SELECT last_insert_rowid()')[0]?.values[0]?.[0] as number;
               if (newLocId && newLocId > 0) {
@@ -243,8 +242,10 @@ export async function mergeBackups(
             }
           }
         }
+        addLog(`  -> Mapped ${locationMap.size} locations from ${srcBackup.fileName}`);
 
         // 2. Merge Tags & Build Map (oldTagId -> newTagId)
+        const destTagCols = getTableColumns(destDb, 'Tag');
         const tagMap = new Map<number, number>();
         const srcTagsRes = srcDb.exec('SELECT * FROM Tag');
         if (srcTagsRes.length > 0) {
@@ -253,6 +254,7 @@ export async function mergeBackups(
             const tagId = row[tagCols.indexOf('TagId')] as number;
             const type = row[tagCols.indexOf('Type')];
             const name = row[tagCols.indexOf('Name')];
+            const lastMod = tagCols.includes('LastModified') ? row[tagCols.indexOf('LastModified')] : null;
 
             const findTag = destDb.prepare('SELECT TagId FROM Tag WHERE Type = ? AND Name = ? LIMIT 1');
             findTag.bind([type, name]);
@@ -260,13 +262,18 @@ export async function mergeBackups(
             if (findTag.step()) {
               tagMap.set(tagId, findTag.get()[0] as number);
             } else {
-              destDb.run('INSERT INTO Tag (Type, Name) VALUES (?, ?)', [type, name]);
+              if (destTagCols.has('LastModified')) {
+                destDb.run('INSERT INTO Tag (Type, Name, LastModified) VALUES (?, ?, ?)', [type, name, lastMod || new Date().toISOString()]);
+              } else {
+                destDb.run('INSERT INTO Tag (Type, Name) VALUES (?, ?)', [type, name]);
+              }
               const newTagId = destDb.exec('SELECT last_insert_rowid()')[0].values[0][0] as number;
               tagMap.set(tagId, newTagId);
             }
             findTag.free();
           }
         }
+        addLog(`  -> Mapped ${tagMap.size} user tag(s)`);
 
         // 3. Merge UserMarks & Build Map (oldUserMarkId -> destUserMarkId)
         const markMap = new Map<number, number>();
@@ -299,15 +306,17 @@ export async function mergeBackups(
             findMark.free();
           }
         }
+        addLog(`  -> Mapped ${markMap.size} highlight marker(s)`);
 
         // 4. Merge BlockRanges & Multi-Block Highlight Healing
         onProgress?.({
           stage: 'healing',
-          percent: stepPercent + 5,
+          percent: stepPercent + 4,
           message: `Preserving and healing multi-paragraph highlights for ${srcBackup.fileName}...`
         });
 
         const srcRangesRes = srcDb.exec('SELECT * FROM BlockRange');
+        let blockRangesAddedThisFile = 0;
         if (srcRangesRes.length > 0) {
           const rangeCols = srcRangesRes[0].columns;
           for (const row of srcRangesRes[0].values) {
@@ -334,13 +343,16 @@ export async function mergeBackups(
                 INSERT INTO BlockRange (BlockType, Identifier, StartToken, EndToken, UserMarkId)
                 VALUES (?, ?, ?, ?, ?)
               `, [blockType, identifier, startToken, endToken, mappedMarkId]);
+              blockRangesAddedThisFile++;
               stats.healedBlockRanges++;
             }
             findRange.free();
           }
         }
+        addLog(`  -> Unified ${srcRangesRes.length > 0 ? srcRangesRes[0].values.length : 0} block range(s) (+${blockRangesAddedThisFile} new/healed)`);
 
-        // 5. Merge Notes (Last Modified Wins on collision)
+        // 5. Merge Notes (Schema-Adaptive: Handles both Created & Non-Created schemas)
+        const destNoteCols = getTableColumns(destDb, 'Note');
         const noteMap = new Map<number, number>();
         const srcNotesRes = srcDb.exec('SELECT * FROM Note');
         if (srcNotesRes.length > 0) {
@@ -352,7 +364,7 @@ export async function mergeBackups(
             const srcLocId = row[noteCols.indexOf('LocationId')] as number | null;
             const title = row[noteCols.indexOf('Title')];
             const content = row[noteCols.indexOf('Content')];
-            const created = row[noteCols.indexOf('Created')];
+            const created = noteCols.includes('Created') ? row[noteCols.indexOf('Created')] : null;
             const lastModified = row[noteCols.indexOf('LastModified')] as string;
             const blockType = row[noteCols.indexOf('BlockType')];
             const blockIdentifier = row[noteCols.indexOf('BlockIdentifier')];
@@ -368,55 +380,114 @@ export async function mergeBackups(
               noteMap.set(noteId, destNoteId);
 
               if (lastModified && (!destLastModified || lastModified > destLastModified)) {
-                destDb.run(`
-                  UPDATE Note SET 
-                    Title = ?, Content = ?, LastModified = ?, Created = ?, 
-                    LocationId = ?, UserMarkId = ?, BlockType = ?, BlockIdentifier = ?
-                  WHERE NoteId = ?
-                `, [title, content, lastModified, created, mappedLocId, mappedMarkId, blockType, blockIdentifier, destNoteId]);
+                if (destNoteCols.has('Created')) {
+                  destDb.run(`
+                    UPDATE Note SET 
+                      Title = ?, Content = ?, LastModified = ?, Created = ?, 
+                      LocationId = ?, UserMarkId = ?, BlockType = ?, BlockIdentifier = ?
+                    WHERE NoteId = ?
+                  `, [title, content, lastModified, created, mappedLocId, mappedMarkId, blockType, blockIdentifier, destNoteId]);
+                } else {
+                  destDb.run(`
+                    UPDATE Note SET 
+                      Title = ?, Content = ?, LastModified = ?, 
+                      LocationId = ?, UserMarkId = ?, BlockType = ?, BlockIdentifier = ?
+                    WHERE NoteId = ?
+                  `, [title, content, lastModified, mappedLocId, mappedMarkId, blockType, blockIdentifier, destNoteId]);
+                }
                 stats.notesUpdatedOnConflict++;
               }
             } else {
-              destDb.run(`
-                INSERT INTO Note (Guid, UserMarkId, LocationId, Title, Content, Created, LastModified, BlockType, BlockIdentifier)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-              `, [guid, mappedMarkId, mappedLocId, title, content, created, lastModified, blockType, blockIdentifier]);
+              if (destNoteCols.has('Created')) {
+                destDb.run(`
+                  INSERT INTO Note (Guid, UserMarkId, LocationId, Title, Content, Created, LastModified, BlockType, BlockIdentifier)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [guid, mappedMarkId, mappedLocId, title, content, created, lastModified, blockType, blockIdentifier]);
+              } else {
+                destDb.run(`
+                  INSERT INTO Note (Guid, UserMarkId, LocationId, Title, Content, LastModified, BlockType, BlockIdentifier)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `, [guid, mappedMarkId, mappedLocId, title, content, lastModified, blockType, blockIdentifier]);
+              }
               const newNoteId = destDb.exec('SELECT last_insert_rowid()')[0].values[0][0] as number;
               noteMap.set(noteId, newNoteId);
             }
             findNote.free();
           }
         }
+        addLog(`  -> Mapped ${noteMap.size} user note(s)`);
 
-        // 6. Merge TagMap
+        // 6. Merge TagMap (Schema-Adaptive: Supports Type/TypeId schema and NoteId/LocationId/PlaylistItemId schema)
+        const destTagMapCols = getTableColumns(destDb, 'TagMap');
         const srcTagMapRes = srcDb.exec('SELECT * FROM TagMap');
         if (srcTagMapRes.length > 0) {
           const tmCols = srcTagMapRes[0].columns;
+          const isSrcSchema5 = tmCols.includes('Type') && tmCols.includes('TypeId');
+          const isDestSchema5 = destTagMapCols.has('Type') && destTagMapCols.has('TypeId');
+
           for (const row of srcTagMapRes[0].values) {
             const srcTagId = row[tmCols.indexOf('TagId')] as number | null;
-            const srcNoteId = tmCols.includes('NoteId') ? (row[tmCols.indexOf('NoteId')] as number | null) : null;
-            const srcLocId = tmCols.includes('LocationId') ? (row[tmCols.indexOf('LocationId')] as number | null) : null;
-            const srcPlId = tmCols.includes('PlaylistItemId') ? (row[tmCols.indexOf('PlaylistItemId')] as number | null) : null;
             const position = row[tmCols.indexOf('Position')];
-
             const mappedTagId = srcTagId ? (tagMap.get(srcTagId) ?? srcTagId) : null;
-            const mappedNoteId = srcNoteId ? (noteMap.get(srcNoteId) ?? srcNoteId) : null;
-            const mappedLocId = srcLocId ? (locationMap.get(srcLocId) ?? srcLocId) : null;
+            if (!mappedTagId) continue;
 
-            if (mappedTagId && mappedNoteId) {
-              const findTm = destDb.prepare(`
-                SELECT TagMapId FROM TagMap 
-                WHERE TagId = ? AND NoteId = ? LIMIT 1
-              `);
-              findTm.bind([mappedTagId, mappedNoteId]);
+            let mappedNoteId: number | null = null;
+            let mappedLocId: number | null = null;
+            let mappedPlId: number | null = null;
 
-              if (!findTm.step()) {
-                destDb.run(`
-                  INSERT INTO TagMap (PlaylistItemId, LocationId, NoteId, TagId, Position)
-                  VALUES (?, ?, ?, ?, ?)
-                `, [srcPlId, mappedLocId, mappedNoteId, mappedTagId, position]);
+            if (isSrcSchema5) {
+              const type = row[tmCols.indexOf('Type')] as number;
+              const typeId = row[tmCols.indexOf('TypeId')] as number;
+              if (type === 1) mappedNoteId = noteMap.get(typeId) ?? typeId;
+              else if (type === 0) mappedLocId = locationMap.get(typeId) ?? typeId;
+              else if (type === 2) mappedPlId = typeId;
+            } else {
+              const srcNoteId = tmCols.includes('NoteId') ? (row[tmCols.indexOf('NoteId')] as number | null) : null;
+              const srcLocId = tmCols.includes('LocationId') ? (row[tmCols.indexOf('LocationId')] as number | null) : null;
+              const srcPlId = tmCols.includes('PlaylistItemId') ? (row[tmCols.indexOf('PlaylistItemId')] as number | null) : null;
+              mappedNoteId = srcNoteId ? (noteMap.get(srcNoteId) ?? srcNoteId) : null;
+              mappedLocId = srcLocId ? (locationMap.get(srcLocId) ?? srcLocId) : null;
+              mappedPlId = srcPlId;
+            }
+
+            if (isDestSchema5) {
+              let targetType = 1;
+              let targetTypeId = mappedNoteId;
+              if (mappedLocId !== null && mappedLocId !== undefined) {
+                targetType = 0;
+                targetTypeId = mappedLocId;
+              } else if (mappedPlId !== null && mappedPlId !== undefined) {
+                targetType = 2;
+                targetTypeId = mappedPlId;
               }
-              findTm.free();
+
+              if (targetTypeId !== null && targetTypeId !== undefined) {
+                const findTm = destDb.prepare('SELECT TagMapId FROM TagMap WHERE TagId = ? AND Type = ? AND TypeId = ? LIMIT 1');
+                findTm.bind([mappedTagId, targetType, targetTypeId]);
+                if (!findTm.step()) {
+                  destDb.run('INSERT INTO TagMap (Type, TypeId, TagId, Position) VALUES (?, ?, ?, ?)', [targetType, targetTypeId, mappedTagId, position]);
+                }
+                findTm.free();
+              }
+            } else {
+              if (mappedNoteId || mappedLocId || mappedPlId) {
+                const findTm = destDb.prepare(`
+                  SELECT TagMapId FROM TagMap 
+                  WHERE TagId = ? 
+                    AND (NoteId IS ? OR (NoteId IS NULL AND ? IS NULL))
+                    AND (LocationId IS ? OR (LocationId IS NULL AND ? IS NULL))
+                    AND (PlaylistItemId IS ? OR (PlaylistItemId IS NULL AND ? IS NULL))
+                  LIMIT 1
+                `);
+                findTm.bind([mappedTagId, mappedNoteId, mappedNoteId, mappedLocId, mappedLocId, mappedPlId, mappedPlId]);
+                if (!findTm.step()) {
+                  destDb.run(`
+                    INSERT INTO TagMap (PlaylistItemId, LocationId, NoteId, TagId, Position)
+                    VALUES (?, ?, ?, ?, ?)
+                  `, [mappedPlId, mappedLocId, mappedNoteId, mappedTagId, position]);
+                }
+                findTm.free();
+              }
             }
           }
         }
@@ -427,7 +498,7 @@ export async function mergeBackups(
           const bkCols = srcBkRes[0].columns;
           for (const row of srcBkRes[0].values) {
             const locId = row[bkCols.indexOf('LocationId')] as number;
-            const pubLocId = row[bkCols.indexOf('PublicationLocationId')] as number | null;
+            const pubLocId = bkCols.includes('PublicationLocationId') ? (row[bkCols.indexOf('PublicationLocationId')] as number | null) : null;
             const slot = row[bkCols.indexOf('Slot')];
             const title = row[bkCols.indexOf('Title')];
             const snippet = row[bkCols.indexOf('Snippet')];
@@ -450,7 +521,7 @@ export async function mergeBackups(
           }
         }
 
-        // 8. Merge InputFields
+        // 8. Merge InputFields (if table exists)
         try {
           const srcInputRes = srcDb.exec('SELECT * FROM InputField');
           if (srcInputRes.length > 0) {
@@ -480,7 +551,7 @@ export async function mergeBackups(
           // older schema without InputField table
         }
 
-        // 9. Merge IndependentMedia
+        // 9. Merge IndependentMedia (if table exists)
         try {
           const srcMediaRes = srcDb.exec('SELECT * FROM IndependentMedia');
           if (srcMediaRes.length > 0) {
@@ -506,7 +577,7 @@ export async function mergeBackups(
           // ignore
         }
 
-        // 10. Merge PlaylistItem
+        // 10. Merge PlaylistItem (if table exists)
         try {
           const srcPlRes = srcDb.exec('SELECT * FROM PlaylistItem');
           if (srcPlRes.length > 0) {
@@ -558,6 +629,8 @@ export async function mergeBackups(
       stats.totalInputFields = 0;
     }
 
+    addLog(`Merged Totals: ${stats.totalMarks} Highlights, ${stats.totalNotes} Notes, ${stats.totalBookmarks} Bookmarks, ${stats.totalTags} Tags, ${stats.healedBlockRanges} Block Ranges Healed.`);
+
     onProgress?.({ stage: 'hashing', percent: 85, message: 'Computing SHA-256 integrity hash...' });
     addLog('Exporting SQLite in-memory database and computing SHA-256 checksum...');
 
@@ -581,7 +654,7 @@ export async function mergeBackups(
     const mergedBlob = await repackJWLibrary(mergedManifest, mergedDbBytes, allExtraFiles);
 
     onProgress?.({ stage: 'complete', percent: 100, message: 'Merge complete! Ready to download.' });
-    addLog(`Merge completed successfully! Output size: ${(mergedBlob.size / (1024 * 1024)).toFixed(2)} MB`);
+    addLog(`Merge completed successfully! Output file size: ${(mergedBlob.size / (1024 * 1024)).toFixed(2)} MB`);
 
     return {
       mergedBlob,

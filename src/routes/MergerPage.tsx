@@ -61,6 +61,7 @@ export const MergerPage: React.FC = () => {
       return combined;
     });
     setResult(null);
+    setProgress({ stage: 'idle', percent: 0, message: '' });
   };
 
   const handleRemoveBackup = (id: string) => {
@@ -70,6 +71,7 @@ export const MergerPage: React.FC = () => {
       return filtered;
     });
     setResult(null);
+    setProgress({ stage: 'idle', percent: 0, message: '' });
   };
 
   const handleMoveUp = (index: number) => {
@@ -122,16 +124,20 @@ export const MergerPage: React.FC = () => {
 
       setResult(res);
       setMergeLogs(res.log);
+      setIsMerging(false);
     } catch (err: any) {
       console.error('Merge failed:', err);
+      setIsMerging(false);
       setProgress({
         stage: 'error',
         percent: 0,
         message: 'Merge failed: ' + (err.message || 'Unknown error'),
         error: err.message
       });
-    } finally {
-      setIsMerging(false);
+      setMergeLogs(prev => [
+        ...prev,
+        `[${new Date().toLocaleTimeString()}] ERROR: ${err.message || 'Unknown error occurred during merge'}`
+      ]);
     }
   };
 
@@ -182,8 +188,15 @@ export const MergerPage: React.FC = () => {
             <DropZone onFilesLoaded={handleFilesLoaded} isLoading={isMerging} />
           </div>
         </div>
-      ) : isMerging ? (
-        <MergeProgress progress={progress} logs={mergeLogs} />
+      ) : isMerging || progress.stage === 'error' ? (
+        <MergeProgress 
+          progress={progress} 
+          logs={mergeLogs} 
+          onRetry={() => {
+            setIsMerging(false);
+            setProgress({ stage: 'idle', percent: 0, message: '' });
+          }}
+        />
       ) : (
         <div className="space-y-6">
           
