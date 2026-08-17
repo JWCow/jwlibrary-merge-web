@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Backup and test archives
+*.jwlibrary
+*.zip
+
