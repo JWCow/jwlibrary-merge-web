@@ -1,5 +1,4 @@
 import initSqlJs, { type SqlJsStatic } from 'sql.js';
-import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 
 let sqlPromise: Promise<SqlJsStatic> | null = null;
 
@@ -8,6 +7,17 @@ export async function getSql(): Promise<SqlJsStatic> {
     sqlPromise = (async () => {
       // Browser environment
       if (typeof window !== 'undefined') {
+        let sqlWasmUrl = '/sql-wasm.wasm';
+        try {
+          // Dynamic import for Vite ?url in browser bundle
+          const wasmMod = await import(/* @vite-ignore */ 'sql.js/dist/sql-wasm.wasm?url');
+          if (wasmMod && wasmMod.default) {
+            sqlWasmUrl = wasmMod.default;
+          }
+        } catch {
+          // fallback to public path
+        }
+
         // Strategy 1: Fetch local bundled WASM binary
         try {
           const res = await fetch(sqlWasmUrl);
@@ -48,7 +58,7 @@ export async function getSql(): Promise<SqlJsStatic> {
           nodePath.resolve(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
           nodePath.resolve(process.cwd(), 'jwlibrary-merge-web', 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
           nodePath.resolve(process.cwd(), 'jwlibrary-merge-web', 'public', 'sql-wasm.wasm'),
-          'D:/CURSOR PROJECTS/claude-jw/jwlibrary-merge-web/public/sql-wasm.wasm'
+          nodePath.resolve(process.cwd(), 'public', 'sql-wasm.wasm')
         ];
         for (const p of candidates) {
           if (nodeFs.existsSync(p)) {
@@ -69,4 +79,28 @@ export async function getSql(): Promise<SqlJsStatic> {
     });
   }
   return sqlPromise;
+}
+
+export function getTableColumns(db: any, tableName: string): Set<string> {
+  const cols = new Set<string>();
+  try {
+    const res = db.exec(`PRAGMA table_info("${tableName}")`);
+    if (res.length > 0) {
+      for (const row of res[0].values) {
+        cols.add(row[1] as string);
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return cols;
+}
+
+export function hasTable(db: any, tableName: string): boolean {
+  try {
+    const res = db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`);
+    return res.length > 0 && res[0].values.length > 0;
+  } catch (e) {
+    return false;
+  }
 }

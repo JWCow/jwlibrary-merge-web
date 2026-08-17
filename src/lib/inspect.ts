@@ -1,4 +1,4 @@
-import { getSql } from './sqlite';
+import { getSql, getTableColumns, hasTable } from './sqlite';
 import { unpackJWLibrary } from './zip';
 import type { BackupMetadata, TableCounts, NoteDetail, BookmarkDetail } from './types';
 
@@ -40,9 +40,11 @@ export async function inspectBackupFile(file: File): Promise<BackupMetadata> {
   try {
     for (const table of KNOWN_TABLES) {
       try {
-        const res = db.exec(`SELECT count(*) as count FROM "${table}"`);
-        if (res.length > 0 && res[0].values.length > 0) {
-          counts[table] = res[0].values[0][0] as number;
+        if (hasTable(db, table)) {
+          const res = db.exec(`SELECT count(*) as count FROM "${table}"`);
+          if (res.length > 0 && res[0].values.length > 0) {
+            counts[table] = res[0].values[0][0] as number;
+          }
         }
       } catch (e) {
         // Table might not exist in older schemas
@@ -52,9 +54,11 @@ export async function inspectBackupFile(file: File): Promise<BackupMetadata> {
 
     let lastModifiedFromDb = manifest.userDataBackup?.lastModifiedDate || '';
     try {
-      const res = db.exec('SELECT LastModified FROM LastModified LIMIT 1');
-      if (res.length > 0 && res[0].values.length > 0) {
-        lastModifiedFromDb = res[0].values[0][0] as string;
+      if (hasTable(db, 'LastModified')) {
+        const res = db.exec('SELECT LastModified FROM LastModified LIMIT 1');
+        if (res.length > 0 && res[0].values.length > 0) {
+          lastModifiedFromDb = res[0].values[0][0] as string;
+        }
       }
     } catch (e) {
       // ignore
@@ -89,6 +93,13 @@ export async function extractNoteDetails(dbBytes: Uint8Array, limit = 100): Prom
   const notes: NoteDetail[] = [];
 
   try {
+    if (!hasTable(db, 'Note')) return [];
+
+    const noteCols = getTableColumns(db, 'Note');
+    const createdCol = noteCols.has('Created') ? 'n.Created' : 'n.LastModified as Created';
+    const hasLocation = hasTable(db, 'Location');
+    const hasUserMark = hasTable(db, 'UserMark');
+
     const query = `
       SELECT 
         n.NoteId, 
@@ -96,12 +107,12 @@ export async function extractNoteDetails(dbBytes: Uint8Array, limit = 100): Prom
         n.Title, 
         n.Content, 
         n.LastModified, 
-        n.Created,
-        l.Title as LocationTitle,
-        u.ColorIndex
+        ${createdCol}
+        ${hasLocation ? ', l.Title as LocationTitle' : ''}
+        ${hasUserMark ? ', u.ColorIndex' : ''}
       FROM Note n
-      LEFT JOIN Location l ON l.LocationId = n.LocationId
-      LEFT JOIN UserMark u ON u.UserMarkId = n.UserMarkId
+      ${hasLocation ? 'LEFT JOIN Location l ON l.LocationId = n.LocationId' : ''}
+      ${hasUserMark ? 'LEFT JOIN UserMark u ON u.UserMarkId = n.UserMarkId' : ''}
       ORDER BY n.LastModified DESC
       LIMIT ${limit}
     `;
@@ -118,9 +129,9 @@ export async function extractNoteDetails(dbBytes: Uint8Array, limit = 100): Prom
           title: row[colIndex('Title')] as string | null,
           content: row[colIndex('Content')] as string | null,
           lastModified: row[colIndex('LastModified')] as string,
-          created: row[colIndex('Created')] as string,
-          locationTitle: row[colIndex('LocationTitle')] as string | undefined,
-          colorIndex: row[colIndex('ColorIndex')] as number | undefined
+          created: (colIndex('Created') !== -1 ? row[colIndex('Created')] : row[colIndex('LastModified')]) as string,
+          locationTitle: hasLocation && colIndex('LocationTitle') !== -1 ? (row[colIndex('LocationTitle')] as string | undefined) : undefined,
+          colorIndex: hasUserMark && colIndex('ColorIndex') !== -1 ? (row[colIndex('ColorIndex')] as number | undefined) : undefined
         });
       }
     }
@@ -139,15 +150,18 @@ export async function extractBookmarkDetails(dbBytes: Uint8Array): Promise<Bookm
   const bookmarks: BookmarkDetail[] = [];
 
   try {
+    if (!hasTable(db, 'Bookmark')) return [];
+
+    const hasLocation = hasTable(db, 'Location');
     const query = `
       SELECT 
         b.BookmarkId,
         b.Title,
         b.Snippet,
-        b.Slot,
-        l.Title as LocationTitle
+        b.Slot
+        ${hasLocation ? ', l.Title as LocationTitle' : ''}
       FROM Bookmark b
-      LEFT JOIN Location l ON l.LocationId = b.LocationId
+      ${hasLocation ? 'LEFT JOIN Location l ON l.LocationId = b.LocationId' : ''}
       ORDER BY b.Slot ASC
     `;
 
@@ -162,7 +176,7 @@ export async function extractBookmarkDetails(dbBytes: Uint8Array): Promise<Bookm
           title: row[colIndex('Title')] as string,
           snippet: row[colIndex('Snippet')] as string | null,
           slot: row[colIndex('Slot')] as number,
-          locationTitle: row[colIndex('LocationTitle')] as string | undefined
+          locationTitle: hasLocation && colIndex('LocationTitle') !== -1 ? (row[colIndex('LocationTitle')] as string | undefined) : undefined
         });
       }
     }
@@ -174,3 +188,4 @@ export async function extractBookmarkDetails(dbBytes: Uint8Array): Promise<Bookm
 
   return bookmarks;
 }
+
