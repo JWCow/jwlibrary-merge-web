@@ -27,6 +27,7 @@
 - [Local Development](#-local-development)
 - [Deployment](#-deployment)
 - [Security & Privacy](#-security--privacy)
+- [Changelog](CHANGELOG.md)
 - [License](#-license)
 
 ---
