@@ -51,6 +51,10 @@ When studying on multiple devices (such as preparing Watchtower articles or meet
 | 🔒 **100% In-Browser Privacy** | Merges SQLite databases in browser RAM. No servers, no tracking, works completely offline. |
 | 🛡️ **Highlight Span Healing** | Retains all `BlockRange` rows associated with each `UserMarkGuid` across multi-paragraph highlights. |
 | 🏷️ **Smart Conflict Resolution** | Full additive union for distinct highlights, bookmarks, and tags. Last-modified wins for note timestamp collisions. |
+| 📊 **Deep Study Analytics** | Multilingual breakdown (MEPS languages), Watchtower multi-year & monthly issue analysis, Bible book categorization, and top studied publications. |
+| 🗺️ **Location Explorer** | Demystifies SQLite `Location` records with resolved titles, MEPS languages, and annotation density rankings. |
+| 🔎 **Multi-Filter Notes & Bookmarks** | Dropdown filters for languages and publication categories with combined real-time search. |
+| 📚 **Schema & Merge Engine FAQ** | Slide-over guide explaining SQLite tables, `UserMark` vs `BlockRange`, token offsets, and merge audit telemetry. |
 | 🧩 **Dynamic Schema Adaptation** | Automatically adapts across database schema versions (e.g. v14, v15, v16 with `Specialty`, `Edition` columns). |
 | 🖼️ **Media & Attached Images** | Extracts and preserves custom playlist thumbnails, photo attachments, and notes artwork. |
 | 📱 **Device Recognition** | Automatically detects and badges iPads, iPhones, Android devices, and Windows PCs. |
