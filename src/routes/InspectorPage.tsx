@@ -12,11 +12,13 @@ import {
   Wrench, 
   CheckCircle2,
   BarChart3,
-  MapPin
+  MapPin,
+  BookOpen
 } from 'lucide-react';
 import { InfoTooltip } from '../components/InfoTooltip';
 import { StudyAnalyticsView } from '../components/StudyAnalyticsView';
 import { LocationExplorerView } from '../components/LocationExplorerView';
+import { SchemaFaqDrawer } from '../components/SchemaFaqDrawer';
 
 export const InspectorPage: React.FC = () => {
   const [backup, setBackup] = useState<BackupMetadata | null>(null);
@@ -29,6 +31,8 @@ export const InspectorPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'locations' | 'notes' | 'bookmarks' | 'tables'>('overview');
   const [repairSuccess, setRepairSuccess] = useState(false);
+  const [isFaqOpen, setIsFaqOpen] = useState(false);
+  const [faqTopic, setFaqTopic] = useState<string | undefined>(undefined);
 
   const handleFileLoaded = async (loaded: BackupMetadata[]) => {
     if (loaded.length === 0) return;
@@ -86,13 +90,24 @@ export const InspectorPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100">
-          Backup Explorer & Inspector
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Inspect, explore study analytics, search notes, view bookmarks, and verify database integrity for any single <code className="font-mono text-xs bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">.jwlibrary</code> file.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100">
+            Backup Explorer & Inspector
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Inspect, explore study analytics, search notes, view bookmarks, and verify database integrity for any single <code className="font-mono text-xs bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">.jwlibrary</code> file.
+          </p>
+        </div>
+
+        <button
+          onClick={() => { setFaqTopic(undefined); setIsFaqOpen(true); }}
+          className="px-4 py-2.5 rounded-xl border border-theocratic-200 dark:border-theocratic-800 bg-theocratic-50 dark:bg-theocratic-950/60 hover:bg-theocratic-100 dark:hover:bg-theocratic-900 text-theocratic-700 dark:text-theocratic-300 font-semibold text-xs flex items-center gap-2 shadow-sm transition-colors flex-shrink-0 self-start sm:self-center"
+          title="Open Database Schema & Merge Engine Guide"
+        >
+          <BookOpen className="w-4 h-4 text-theocratic-600 dark:text-theocratic-400" />
+          <span>Database Guide & FAQ</span>
+        </button>
       </div>
 
       {!backup ? (
@@ -319,10 +334,19 @@ export const InspectorPage: React.FC = () => {
 
           {/* 4. Raw Tables Count View */}
           {activeTab === 'tables' && (
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-              <h3 className="text-xs uppercase font-bold tracking-wider text-slate-400 mb-4">
-                SQLite Database Table Record Counts
-              </h3>
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h3 className="text-xs uppercase font-bold tracking-wider text-slate-400">
+                  SQLite Database Table Record Counts
+                </h3>
+                <button
+                  onClick={() => { setFaqTopic('sqlite-tables-overview'); setIsFaqOpen(true); }}
+                  className="text-xs text-theocratic-600 dark:text-theocratic-400 hover:underline flex items-center gap-1 font-semibold self-start sm:self-auto"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>View Schema Table Dictionary & Guide</span>
+                </button>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono text-xs">
                 {Object.entries(backup.counts).map(([tbl, count]) => (
                   <div key={tbl} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
@@ -339,6 +363,13 @@ export const InspectorPage: React.FC = () => {
 
         </div>
       )}
+
+      {/* Database Schema & Merge Engine FAQ Drawer */}
+      <SchemaFaqDrawer
+        isOpen={isFaqOpen}
+        onClose={() => setIsFaqOpen(false)}
+        initialTopic={faqTopic}
+      />
 
     </div>
   );

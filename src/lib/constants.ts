@@ -618,3 +618,7 @@ export function getSchemaDefinition(term?: string | null): SchemaDefinition | un
 
   return undefined;
 }
+
+// Re-export Schema FAQ & Guide definitions
+export * from './faq';
+
