@@ -18,6 +18,7 @@ import {
   Sparkles 
 } from 'lucide-react';
 import type { BackupMetadata } from '../lib/types';
+import { InfoTooltip } from './InfoTooltip';
 
 interface BackupCardProps {
   backup: BackupMetadata;
@@ -169,8 +170,11 @@ export const BackupCard: React.FC<BackupCardProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
           <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center gap-2">
             <Highlighter className="w-4 h-4 text-amber-500 flex-shrink-0" />
-            <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Highlights</div>
+            <div className="min-w-0">
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span>Highlights</span>
+                <InfoTooltip term="UserMark" />
+              </div>
               <div className="font-bold text-sm text-slate-800 dark:text-slate-200">
                 {backup.counts.UserMark?.toLocaleString() || 0}
               </div>
@@ -179,8 +183,11 @@ export const BackupCard: React.FC<BackupCardProps> = ({
 
           <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center gap-2">
             <FileText className="w-4 h-4 text-theocratic-500 flex-shrink-0" />
-            <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Notes</div>
+            <div className="min-w-0">
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span>Notes</span>
+                <InfoTooltip term="Note" />
+              </div>
               <div className="font-bold text-sm text-slate-800 dark:text-slate-200">
                 {backup.counts.Note?.toLocaleString() || 0}
               </div>
@@ -189,8 +196,11 @@ export const BackupCard: React.FC<BackupCardProps> = ({
 
           <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center gap-2">
             <Tag className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-            <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Tags</div>
+            <div className="min-w-0">
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span>Tags</span>
+                <InfoTooltip term="Tag" />
+              </div>
               <div className="font-bold text-sm text-slate-800 dark:text-slate-200">
                 {backup.counts.Tag?.toLocaleString() || 0}
               </div>
@@ -199,8 +209,11 @@ export const BackupCard: React.FC<BackupCardProps> = ({
 
           <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center gap-2">
             <Bookmark className="w-4 h-4 text-purple-500 flex-shrink-0" />
-            <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Bookmarks</div>
+            <div className="min-w-0">
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span>Bookmarks</span>
+                <InfoTooltip term="Bookmark" />
+              </div>
               <div className="font-bold text-sm text-slate-800 dark:text-slate-200">
                 {backup.counts.Bookmark?.toLocaleString() || 0}
               </div>
@@ -231,16 +244,55 @@ export const BackupCard: React.FC<BackupCardProps> = ({
         </div>
 
         {expanded && (
-          <div className="mt-3 p-3 rounded-xl bg-slate-100/70 dark:bg-slate-800/70 text-xs font-mono text-slate-600 dark:text-slate-300 space-y-1">
-            <div><strong>Schema Version:</strong> v{backup.schemaVersion}</div>
-            <div><strong>Block Ranges:</strong> {backup.counts.BlockRange?.toLocaleString()}</div>
-            <div><strong>Tag Mappings:</strong> {backup.counts.TagMap?.toLocaleString()}</div>
-            <div><strong>Input Fields:</strong> {backup.counts.InputField?.toLocaleString() || 0}</div>
-            <div><strong>Locations:</strong> {backup.counts.Location?.toLocaleString()}</div>
-            <div className="truncate"><strong>Manifest Hash:</strong> {backup.manifest.userDataBackup?.hash}</div>
+          <div className="mt-3 p-3 rounded-xl bg-slate-100/70 dark:bg-slate-800/70 text-xs font-mono text-slate-600 dark:text-slate-300 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1 font-semibold">
+                Schema Version
+                <InfoTooltip term="Schema Version" />
+              </span>
+              <span>v{backup.schemaVersion}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1 font-semibold">
+                Block Ranges
+                <InfoTooltip term="BlockRange" />
+              </span>
+              <span>{backup.counts.BlockRange?.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1 font-semibold">
+                Tag Mappings
+                <InfoTooltip term="TagMap" />
+              </span>
+              <span>{backup.counts.TagMap?.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1 font-semibold">
+                Input Fields
+                <InfoTooltip term="InputField" />
+              </span>
+              <span>{backup.counts.InputField?.toLocaleString() || 0}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1 font-semibold">
+                Locations
+                <InfoTooltip term="Location" />
+              </span>
+              <span>{backup.counts.Location?.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-700/60 text-[11px]">
+              <span className="flex items-center gap-1 font-semibold">
+                Manifest Hash
+                <InfoTooltip term="Manifest Hash" />
+              </span>
+              <span className="truncate max-w-[160px] sm:max-w-[220px]" title={backup.manifest.userDataBackup?.hash}>
+                {backup.manifest.userDataBackup?.hash}
+              </span>
+            </div>
           </div>
         )}
       </div>
     </div>
   );
 };
+

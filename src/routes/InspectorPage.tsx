@@ -11,6 +11,7 @@ import {
   Wrench, 
   CheckCircle2
 } from 'lucide-react';
+import { InfoTooltip } from '../components/InfoTooltip';
 
 export const InspectorPage: React.FC = () => {
   const [backup, setBackup] = useState<BackupMetadata | null>(null);
@@ -95,8 +96,14 @@ export const InspectorPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap font-mono">
                   <span>Modified: {new Date(backup.lastModifiedDate).toLocaleDateString()}</span>
-                  <span>Schema: v{backup.schemaVersion}</span>
-                  <span>Hash: {backup.manifest.userDataBackup?.hash.slice(0, 12)}...</span>
+                  <span className="flex items-center gap-1">
+                    Schema: v{backup.schemaVersion}
+                    <InfoTooltip term="Schema Version" />
+                  </span>
+                  <span className="flex items-center gap-1">
+                    Hash: {backup.manifest.userDataBackup?.hash.slice(0, 12)}...
+                    <InfoTooltip term="Manifest Hash" />
+                  </span>
                 </div>
               </div>
             </div>
@@ -262,8 +269,11 @@ export const InspectorPage: React.FC = () => {
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono text-xs">
                 {Object.entries(backup.counts).map(([tbl, count]) => (
-                  <div key={tbl} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex justify-between">
-                    <span className="text-slate-600 dark:text-slate-400">{tbl}</span>
+                  <div key={tbl} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                    <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5 font-semibold">
+                      <span>{tbl}</span>
+                      <InfoTooltip term={tbl} />
+                    </span>
                     <span className="font-bold text-slate-900 dark:text-slate-100">{count?.toLocaleString()}</span>
                   </div>
                 ))}

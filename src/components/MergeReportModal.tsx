@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import type { MergeResult } from '../lib/merge';
 import type { BackupMetadata } from '../lib/types';
+import { InfoTooltip } from './InfoTooltip';
 
 interface MergeReportModalProps {
   result: MergeResult;
@@ -124,8 +125,11 @@ export const MergeReportModal: React.FC<MergeReportModalProps> = ({
             <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400">
               <Highlighter className="w-4 h-4" />
             </div>
-            <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Total Highlights</div>
+            <div className="min-w-0">
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span>Total Highlights</span>
+                <InfoTooltip term="UserMark" />
+              </div>
               <div className="text-lg font-bold text-slate-900 dark:text-slate-100">
                 {result.stats.totalMarks.toLocaleString()}
               </div>
@@ -136,8 +140,11 @@ export const MergeReportModal: React.FC<MergeReportModalProps> = ({
             <div className="p-2 rounded-lg bg-theocratic-100 dark:bg-theocratic-950 text-theocratic-600 dark:text-theocratic-400">
               <FileText className="w-4 h-4" />
             </div>
-            <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Total Notes</div>
+            <div className="min-w-0">
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span>Total Notes</span>
+                <InfoTooltip term="Note" />
+              </div>
               <div className="text-lg font-bold text-slate-900 dark:text-slate-100">
                 {result.stats.totalNotes.toLocaleString()}
               </div>
@@ -148,8 +155,11 @@ export const MergeReportModal: React.FC<MergeReportModalProps> = ({
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
               <Tag className="w-4 h-4" />
             </div>
-            <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Tags</div>
+            <div className="min-w-0">
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span>Tags</span>
+                <InfoTooltip term="Tag" />
+              </div>
               <div className="text-lg font-bold text-slate-900 dark:text-slate-100">
                 {result.stats.totalTags.toLocaleString()}
               </div>
@@ -160,8 +170,11 @@ export const MergeReportModal: React.FC<MergeReportModalProps> = ({
             <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
               <Bookmark className="w-4 h-4" />
             </div>
-            <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Bookmarks</div>
+            <div className="min-w-0">
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span>Bookmarks</span>
+                <InfoTooltip term="Bookmark" />
+              </div>
               <div className="text-lg font-bold text-slate-900 dark:text-slate-100">
                 {result.stats.totalBookmarks.toLocaleString()}
               </div>
@@ -174,9 +187,13 @@ export const MergeReportModal: React.FC<MergeReportModalProps> = ({
         {(result.stats.healedBlockRanges > 0 || result.stats.notesUpdatedOnConflict > 0 || result.stats.locationsAdded > 0) && (
           <div className="mt-3 p-3 rounded-xl bg-theocratic-50 dark:bg-theocratic-950/60 border border-theocratic-200 dark:border-theocratic-800 text-xs text-theocratic-800 dark:text-theocratic-300 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-theocratic-600 flex-shrink-0" />
-            <span>
+            <div className="flex-1">
               <strong>Smart Auto-Repair:</strong> Restored {result.stats.healedBlockRanges} multi-block highlight ranges, mapped {result.stats.locationsAdded} new biblical/publication locations, and updated {result.stats.notesUpdatedOnConflict} newer note versions.
-            </span>
+            </div>
+            <InfoTooltip
+              title="Smart Auto-Repair"
+              content="Smart healing preserves all paragraph and verse spans in multi-block highlights, maps newly introduced publication locations, and deterministically resolves simultaneous note edits without data loss."
+            />
           </div>
         )}
       </div>
