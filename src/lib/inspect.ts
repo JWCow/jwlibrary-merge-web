@@ -189,3 +189,5 @@ export async function extractBookmarkDetails(dbBytes: Uint8Array): Promise<Bookm
   return bookmarks;
 }
 
+export { extractLocationDetails, getLocationSummaryStats } from './locations';
+

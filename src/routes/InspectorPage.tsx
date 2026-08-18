@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { DropZone } from '../components/DropZone';
-import { extractNoteDetails, extractBookmarkDetails } from '../lib/inspect';
+import { extractNoteDetails, extractBookmarkDetails, extractLocationDetails } from '../lib/inspect';
 import { extractBackupAnalytics } from '../lib/analytics';
 import { repackJWLibrary } from '../lib/zip';
-import type { BackupMetadata, NoteDetail, BookmarkDetail, BackupAnalytics } from '../lib/types';
+import type { BackupMetadata, NoteDetail, BookmarkDetail, BackupAnalytics, LocationDetail } from '../lib/types';
 import { 
   Search, 
   FileText, 
@@ -11,19 +11,23 @@ import {
   Database, 
   Wrench, 
   CheckCircle2,
-  BarChart3
+  BarChart3,
+  MapPin
 } from 'lucide-react';
 import { InfoTooltip } from '../components/InfoTooltip';
 import { StudyAnalyticsView } from '../components/StudyAnalyticsView';
+import { LocationExplorerView } from '../components/LocationExplorerView';
 
 export const InspectorPage: React.FC = () => {
   const [backup, setBackup] = useState<BackupMetadata | null>(null);
   const [analytics, setAnalytics] = useState<BackupAnalytics | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [locations, setLocations] = useState<LocationDetail[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
   const [notes, setNotes] = useState<NoteDetail[]>([]);
   const [bookmarks, setBookmarks] = useState<BookmarkDetail[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'bookmarks' | 'tables'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'locations' | 'notes' | 'bookmarks' | 'tables'>('overview');
   const [repairSuccess, setRepairSuccess] = useState(false);
 
   const handleFileLoaded = async (loaded: BackupMetadata[]) => {
@@ -32,23 +36,28 @@ export const InspectorPage: React.FC = () => {
     setBackup(b);
     setRepairSuccess(false);
     setLoadingAnalytics(true);
+    setLoadingLocations(true);
     setActiveTab('overview');
 
     try {
-      const [extractedNotes, extractedBookmarks, extractedAnalytics] = await Promise.all([
+      const [extractedNotes, extractedBookmarks, extractedAnalytics, extractedLocations] = await Promise.all([
         extractNoteDetails(b.userDataDbBytes, 200),
         extractBookmarkDetails(b.userDataDbBytes),
-        extractBackupAnalytics(b.userDataDbBytes)
+        extractBackupAnalytics(b.userDataDbBytes),
+        extractLocationDetails(b.userDataDbBytes)
       ]);
       setNotes(extractedNotes);
       setBookmarks(extractedBookmarks);
       setAnalytics(extractedAnalytics);
+      setLocations(extractedLocations);
     } catch (e) {
       console.error('Failed to extract backup details:', e);
     } finally {
       setLoadingAnalytics(false);
+      setLoadingLocations(false);
     }
   };
+
 
   const handleRepairAndDownload = async () => {
     if (!backup) return;
@@ -130,7 +139,7 @@ export const InspectorPage: React.FC = () => {
                 <span>Fix & Rehash</span>
               </button>
               <button
-                onClick={() => { setBackup(null); setNotes([]); setBookmarks([]); setAnalytics(null); setActiveTab('overview'); }}
+                onClick={() => { setBackup(null); setNotes([]); setBookmarks([]); setAnalytics(null); setLocations([]); setActiveTab('overview'); }}
                 className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium transition-colors"
               >
                 Change File
@@ -157,6 +166,18 @@ export const InspectorPage: React.FC = () => {
             >
               <BarChart3 className="w-3.5 h-3.5" />
               <span>Study Overview & Analytics</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('locations')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0 ${
+                activeTab === 'locations'
+                  ? 'bg-theocratic-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Locations ({backup.counts.Location || 0})</span>
             </button>
 
             <button
@@ -201,8 +222,14 @@ export const InspectorPage: React.FC = () => {
             <StudyAnalyticsView analytics={analytics} loading={loadingAnalytics} />
           )}
 
-          {/* 2. Notes Tab View */}
+          {/* 2. Locations Explorer Tab View */}
+          {activeTab === 'locations' && (
+            <LocationExplorerView locations={locations} loading={loadingLocations} />
+          )}
+
+          {/* 3. Notes Tab View */}
           {activeTab === 'notes' && (
+
             <div className="space-y-4">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />

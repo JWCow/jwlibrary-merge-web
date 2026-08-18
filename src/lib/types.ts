@@ -181,3 +181,46 @@ export interface BackupAnalytics {
   topPublications: TopStudiedPublication[];
 }
 
+export type LocationCategoryType = 'bible' | 'publication' | 'media' | 'other';
+
+export interface LocationDetail {
+  locationId: number;
+  bookNumber: number | null;
+  chapterNumber: number | null;
+  documentId: number | null;
+  track: number | null;
+  issueTagNumber: number | null;
+  keySymbol: string | null;
+  mepsLanguage: number;
+  type: number | null;
+  rawTitle: string | null;
+  resolvedTitle: string;
+  shortTitle: string;
+  category: LocationCategoryType;
+  categoryLabel: string;
+  languageName: string;
+  languageCode?: string;
+  issueTagFormatted?: string;
+  highlightsCount: number;
+  notesCount: number;
+  bookmarksCount: number;
+  inputFieldsCount: number;
+  totalAnnotations: number;
+  lastModified?: string | null;
+}
+
+export interface LocationSummaryStats {
+  totalLocations: number;
+  bibleLocationsCount: number;
+  publicationLocationsCount: number;
+  mediaLocationsCount: number;
+  otherLocationsCount: number;
+  annotatedLocationsCount: number;
+  totalHighlights: number;
+  totalNotes: number;
+  totalBookmarks: number;
+  totalInputFields: number;
+  totalAnnotations: number;
+}
+
+
