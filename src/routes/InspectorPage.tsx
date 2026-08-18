@@ -1,24 +1,29 @@
 import { useState } from 'react';
 import { DropZone } from '../components/DropZone';
 import { extractNoteDetails, extractBookmarkDetails } from '../lib/inspect';
+import { extractBackupAnalytics } from '../lib/analytics';
 import { repackJWLibrary } from '../lib/zip';
-import type { BackupMetadata, NoteDetail, BookmarkDetail } from '../lib/types';
+import type { BackupMetadata, NoteDetail, BookmarkDetail, BackupAnalytics } from '../lib/types';
 import { 
   Search, 
   FileText, 
   Bookmark, 
   Database, 
   Wrench, 
-  CheckCircle2
+  CheckCircle2,
+  BarChart3
 } from 'lucide-react';
 import { InfoTooltip } from '../components/InfoTooltip';
+import { StudyAnalyticsView } from '../components/StudyAnalyticsView';
 
 export const InspectorPage: React.FC = () => {
   const [backup, setBackup] = useState<BackupMetadata | null>(null);
+  const [analytics, setAnalytics] = useState<BackupAnalytics | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [notes, setNotes] = useState<NoteDetail[]>([]);
   const [bookmarks, setBookmarks] = useState<BookmarkDetail[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'notes' | 'bookmarks' | 'tables'>('notes');
+  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'bookmarks' | 'tables'>('overview');
   const [repairSuccess, setRepairSuccess] = useState(false);
 
   const handleFileLoaded = async (loaded: BackupMetadata[]) => {
@@ -26,15 +31,22 @@ export const InspectorPage: React.FC = () => {
     const b = loaded[0];
     setBackup(b);
     setRepairSuccess(false);
+    setLoadingAnalytics(true);
+    setActiveTab('overview');
 
     try {
-      const extractedNotes = await extractNoteDetails(b.userDataDbBytes, 200);
+      const [extractedNotes, extractedBookmarks, extractedAnalytics] = await Promise.all([
+        extractNoteDetails(b.userDataDbBytes, 200),
+        extractBookmarkDetails(b.userDataDbBytes),
+        extractBackupAnalytics(b.userDataDbBytes)
+      ]);
       setNotes(extractedNotes);
-
-      const extractedBookmarks = await extractBookmarkDetails(b.userDataDbBytes);
       setBookmarks(extractedBookmarks);
+      setAnalytics(extractedAnalytics);
     } catch (e) {
       console.error('Failed to extract backup details:', e);
+    } finally {
+      setLoadingAnalytics(false);
     }
   };
 
@@ -70,7 +82,7 @@ export const InspectorPage: React.FC = () => {
           Backup Explorer & Inspector
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Inspect, search notes, view bookmarks, and verify database integrity for any single <code className="font-mono text-xs bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">.jwlibrary</code> file.
+          Inspect, explore study analytics, search notes, view bookmarks, and verify database integrity for any single <code className="font-mono text-xs bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">.jwlibrary</code> file.
         </p>
       </div>
 
@@ -118,7 +130,7 @@ export const InspectorPage: React.FC = () => {
                 <span>Fix & Rehash</span>
               </button>
               <button
-                onClick={() => { setBackup(null); setNotes([]); setBookmarks([]); }}
+                onClick={() => { setBackup(null); setNotes([]); setBookmarks([]); setAnalytics(null); setActiveTab('overview'); }}
                 className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium transition-colors"
               >
                 Change File
@@ -134,10 +146,22 @@ export const InspectorPage: React.FC = () => {
           )}
 
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0 ${
+                activeTab === 'overview'
+                  ? 'bg-theocratic-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Study Overview & Analytics</span>
+            </button>
+
             <button
               onClick={() => setActiveTab('notes')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0 ${
                 activeTab === 'notes'
                   ? 'bg-theocratic-600 text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -149,7 +173,7 @@ export const InspectorPage: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('bookmarks')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0 ${
                 activeTab === 'bookmarks'
                   ? 'bg-theocratic-600 text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -161,7 +185,7 @@ export const InspectorPage: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('tables')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0 ${
                 activeTab === 'tables'
                   ? 'bg-theocratic-600 text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -172,7 +196,12 @@ export const InspectorPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Notes Tab View */}
+          {/* 1. Overview & Analytics Tab View */}
+          {activeTab === 'overview' && (
+            <StudyAnalyticsView analytics={analytics} loading={loadingAnalytics} />
+          )}
+
+          {/* 2. Notes Tab View */}
           {activeTab === 'notes' && (
             <div className="space-y-4">
               <div className="relative">
@@ -222,7 +251,7 @@ export const InspectorPage: React.FC = () => {
             </div>
           )}
 
-          {/* Bookmarks Tab View */}
+          {/* 3. Bookmarks Tab View */}
           {activeTab === 'bookmarks' && (
             <div className="space-y-3">
               {bookmarks.length === 0 ? (
@@ -261,7 +290,7 @@ export const InspectorPage: React.FC = () => {
             </div>
           )}
 
-          {/* Raw Tables Count View */}
+          {/* 4. Raw Tables Count View */}
           {activeTab === 'tables' && (
             <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
               <h3 className="text-xs uppercase font-bold tracking-wider text-slate-400 mb-4">

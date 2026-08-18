@@ -26,3 +26,17 @@ npm run preview    # Preview production build locally
 ```bash
 npx wrangler pages deploy dist
 ```
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues (`gh` CLI) against `JWCow/jwlibrary-merge-web`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical defaults, unchanged: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context. See `docs/agents/domain.md`.

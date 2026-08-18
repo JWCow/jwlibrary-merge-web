@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "tsx tests/merge-test.mjs && tsx tests/constants-test.mjs"
+    "test": "tsx tests/merge-test.mjs && tsx tests/constants-test.mjs && tsx tests/analytics-test.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",
