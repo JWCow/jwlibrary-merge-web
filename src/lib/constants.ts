@@ -1,3 +1,5 @@
+import type { PublicationCategoryKey } from './types';
+
 export type PublicationCategory = 
   | 'bible'
   | 'watchtower'
@@ -490,6 +492,138 @@ export function getPublicationCategoryBadge(category: PublicationCategory): { la
       };
   }
 }
+
+/**
+ * Metadata and display tokens for the 5 high-level publication categories.
+ */
+export const PUBLICATION_CATEGORY_DEFINITIONS: Record<PublicationCategoryKey, {
+  key: PublicationCategoryKey;
+  label: string;
+  shortLabel: string;
+  description: string;
+  badge: {
+    color: string;
+    bg: string;
+    border: string;
+  };
+}> = {
+  bible: {
+    key: 'bible',
+    label: 'Holy Scriptures (Bible)',
+    shortLabel: 'Bible',
+    description: 'Direct annotations, notes, and bookmarks in Bible chapters and verses',
+    badge: {
+      color: 'text-amber-700 dark:text-amber-300',
+      bg: 'bg-amber-50 dark:bg-amber-950/60',
+      border: 'border-amber-200 dark:border-amber-800'
+    }
+  },
+  watchtower: {
+    key: 'watchtower',
+    label: 'The Watchtower',
+    shortLabel: 'The Watchtower',
+    description: 'Study and Public Edition Watchtower magazines and study articles',
+    badge: {
+      color: 'text-theocratic-700 dark:text-theocratic-300',
+      bg: 'bg-theocratic-50 dark:bg-theocratic-950/60',
+      border: 'border-theocratic-200 dark:border-theocratic-800'
+    }
+  },
+  workbook: {
+    key: 'workbook',
+    label: 'Life & Ministry Meeting Workbook',
+    shortLabel: 'Meeting Workbook',
+    description: 'Our Christian Life and Ministry meeting workbook schedules and worksheets',
+    badge: {
+      color: 'text-emerald-700 dark:text-emerald-300',
+      bg: 'bg-emerald-50 dark:bg-emerald-950/60',
+      border: 'border-emerald-200 dark:border-emerald-800'
+    }
+  },
+  books_brochures: {
+    key: 'books_brochures',
+    label: 'Books, Brochures & Reference',
+    shortLabel: 'Books & Brochures',
+    description: 'Study books (Enjoy Life Forever!), brochures, research publications, and articles',
+    badge: {
+      color: 'text-indigo-700 dark:text-indigo-300',
+      bg: 'bg-indigo-50 dark:bg-indigo-950/60',
+      border: 'border-indigo-200 dark:border-indigo-800'
+    }
+  },
+  independent_notes: {
+    key: 'independent_notes',
+    label: 'Independent & General Notes',
+    shortLabel: 'Independent Notes',
+    description: 'User-created notes and annotations not linked to a specific publication',
+    badge: {
+      color: 'text-slate-700 dark:text-slate-300',
+      bg: 'bg-slate-100 dark:bg-slate-800/60',
+      border: 'border-slate-200 dark:border-slate-700'
+    }
+  }
+};
+
+/**
+ * Resolves the high-level PublicationCategoryKey from raw location attributes.
+ */
+export function resolvePublicationCategory(loc?: {
+  bookNumber?: number | null;
+  chapterNumber?: number | null;
+  documentId?: number | null;
+  track?: number | null;
+  issueTagNumber?: number | null;
+  keySymbol?: string | null;
+  type?: number | null;
+  title?: string | null;
+} | null): PublicationCategoryKey {
+  if (!loc) return 'independent_notes';
+
+  // 1. Holy Scriptures (Bible)
+  if (
+    (loc.bookNumber !== null && loc.bookNumber !== undefined && loc.bookNumber >= 1 && loc.bookNumber <= 66) ||
+    (loc.keySymbol && ['nwt', 'nwtsty', 'bi12', 'int'].includes(loc.keySymbol.toLowerCase().trim())) ||
+    loc.type === 0
+  ) {
+    return 'bible';
+  }
+
+  const sym = (loc.keySymbol || '').toLowerCase().trim();
+
+  // 2. Our Christian Life and Ministry Meeting Workbooks
+  if (sym.startsWith('mwb') || sym === 'mwb') {
+    return 'workbook';
+  }
+
+  // 3. The Watchtower
+  if (
+    sym.startsWith('w') ||
+    sym === 'wp' ||
+    sym === 'ws' ||
+    (loc.keySymbol && getPublicationInfo(loc.keySymbol).category === 'watchtower')
+  ) {
+    return 'watchtower';
+  }
+
+  // 4. Books, Brochures, Reference, Media
+  if (sym || (loc.documentId !== null && loc.documentId !== undefined) || (loc.title && loc.title.trim()) || loc.type === 1 || loc.type === 2) {
+    return 'books_brochures';
+  }
+
+  return 'independent_notes';
+}
+
+/**
+ * Standard JW Library highlight color definitions by ColorIndex (1–6).
+ */
+export const HIGHLIGHT_COLORS: Record<number, { name: string; bg: string; text: string; border: string; dot: string }> = {
+  1: { name: 'Yellow', bg: 'bg-yellow-100 dark:bg-yellow-950/60', text: 'text-yellow-800 dark:text-yellow-300', border: 'border-yellow-300 dark:border-yellow-700', dot: 'bg-yellow-400' },
+  2: { name: 'Green', bg: 'bg-emerald-100 dark:bg-emerald-950/60', text: 'text-emerald-800 dark:text-emerald-300', border: 'border-emerald-300 dark:border-emerald-700', dot: 'bg-emerald-400' },
+  3: { name: 'Blue', bg: 'bg-sky-100 dark:bg-sky-950/60', text: 'text-sky-800 dark:text-sky-300', border: 'border-sky-300 dark:border-sky-700', dot: 'bg-sky-400' },
+  4: { name: 'Pink', bg: 'bg-pink-100 dark:bg-pink-950/60', text: 'text-pink-800 dark:text-pink-300', border: 'border-pink-300 dark:border-pink-700', dot: 'bg-pink-400' },
+  5: { name: 'Orange', bg: 'bg-amber-100 dark:bg-amber-950/60', text: 'text-amber-800 dark:text-amber-300', border: 'border-amber-300 dark:border-amber-700', dot: 'bg-amber-400' },
+  6: { name: 'Purple', bg: 'bg-purple-100 dark:bg-purple-950/60', text: 'text-purple-800 dark:text-purple-300', border: 'border-purple-300 dark:border-purple-700', dot: 'bg-purple-400' },
+};
 
 /**
  * Canonical descriptions and definitions for JW Library SQLite schema tables,

@@ -2,7 +2,8 @@ import { getSql, hasTable } from './sqlite';
 import { 
   getLanguageInfo, 
   getBibleBookInfo, 
-  getPublicationInfo 
+  getPublicationInfo,
+  resolvePublicationCategory
 } from './constants';
 import type { 
   BackupAnalytics, 
@@ -85,44 +86,7 @@ export function parseIssueTagNumber(
   return { year, month: safeMonth, monthName, formatted };
 }
 
-/**
- * Resolves the primary category key for a Location.
- */
-function resolvePublicationCategory(loc?: LocationRecord | null): PublicationCategoryKey {
-  if (!loc) return 'independent_notes';
-
-  // 1. Holy Scriptures (Bible)
-  if (
-    (loc.bookNumber !== null && loc.bookNumber !== undefined && loc.bookNumber >= 1 && loc.bookNumber <= 66) ||
-    (loc.keySymbol && ['nwt', 'nwtsty', 'bi12', 'int'].includes(loc.keySymbol.toLowerCase()))
-  ) {
-    return 'bible';
-  }
-
-  const sym = (loc.keySymbol || '').toLowerCase().trim();
-
-  // 2. Our Christian Life and Ministry Meeting Workbooks
-  if (sym.startsWith('mwb') || sym === 'mwb') {
-    return 'workbook';
-  }
-
-  // 3. The Watchtower
-  if (
-    sym.startsWith('w') ||
-    sym === 'wp' ||
-    sym === 'ws' ||
-    getPublicationInfo(loc.keySymbol).category === 'watchtower'
-  ) {
-    return 'watchtower';
-  }
-
-  // 4. If symbol exists or document exists -> Books/Brochures/Reference
-  if (sym || loc.documentId || loc.title) {
-    return 'books_brochures';
-  }
-
-  return 'independent_notes';
-}
+export { resolvePublicationCategory };
 
 /**
  * Extracts and aggregates comprehensive study analytics from a JW Library database.

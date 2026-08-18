@@ -5,7 +5,6 @@ import { extractBackupAnalytics } from '../lib/analytics';
 import { repackJWLibrary } from '../lib/zip';
 import type { BackupMetadata, NoteDetail, BookmarkDetail, BackupAnalytics, LocationDetail } from '../lib/types';
 import { 
-  Search, 
   FileText, 
   Bookmark, 
   Database, 
@@ -18,6 +17,8 @@ import {
 import { InfoTooltip } from '../components/InfoTooltip';
 import { StudyAnalyticsView } from '../components/StudyAnalyticsView';
 import { LocationExplorerView } from '../components/LocationExplorerView';
+import { NotesExplorerView } from '../components/NotesExplorerView';
+import { BookmarksExplorerView } from '../components/BookmarksExplorerView';
 import { SchemaFaqDrawer } from '../components/SchemaFaqDrawer';
 
 export const InspectorPage: React.FC = () => {
@@ -28,7 +29,6 @@ export const InspectorPage: React.FC = () => {
   const [loadingLocations, setLoadingLocations] = useState(false);
   const [notes, setNotes] = useState<NoteDetail[]>([]);
   const [bookmarks, setBookmarks] = useState<BookmarkDetail[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'locations' | 'notes' | 'bookmarks' | 'tables'>('overview');
   const [repairSuccess, setRepairSuccess] = useState(false);
   const [isFaqOpen, setIsFaqOpen] = useState(false);
@@ -45,7 +45,7 @@ export const InspectorPage: React.FC = () => {
 
     try {
       const [extractedNotes, extractedBookmarks, extractedAnalytics, extractedLocations] = await Promise.all([
-        extractNoteDetails(b.userDataDbBytes, 200),
+        extractNoteDetails(b.userDataDbBytes),
         extractBookmarkDetails(b.userDataDbBytes),
         extractBackupAnalytics(b.userDataDbBytes),
         extractLocationDetails(b.userDataDbBytes)
@@ -80,12 +80,6 @@ export const InspectorPage: React.FC = () => {
       console.error('Repair failed:', e);
     }
   };
-
-  const filteredNotes = notes.filter(n => 
-    (n.title && n.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (n.content && n.content.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (n.locationTitle && n.locationTitle.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -244,92 +238,12 @@ export const InspectorPage: React.FC = () => {
 
           {/* 3. Notes Tab View */}
           {activeTab === 'notes' && (
-
-            <div className="space-y-4">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search notes by title, content, or publication..."
-                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-theocratic-500"
-                />
-              </div>
-
-              <div className="space-y-3">
-                {filteredNotes.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400 text-sm">
-                    No notes match your query.
-                  </div>
-                ) : (
-                  filteredNotes.map((note) => (
-                    <div
-                      key={note.guid || note.noteId}
-                      className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                          {note.title || 'Untitled Note'}
-                        </h3>
-                        <span className="text-[11px] font-mono text-slate-400">
-                          {new Date(note.lastModified).toLocaleDateString()}
-                        </span>
-                      </div>
-                      {note.locationTitle && (
-                        <div className="text-xs text-theocratic-600 dark:text-theocratic-400 font-medium">
-                          {note.locationTitle}
-                        </div>
-                      )}
-                      {note.content && (
-                        <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-3 whitespace-pre-line">
-                          {note.content}
-                        </p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+            <NotesExplorerView notes={notes} loading={loadingAnalytics} />
           )}
 
-          {/* 3. Bookmarks Tab View */}
+          {/* 4. Bookmarks Tab View */}
           {activeTab === 'bookmarks' && (
-            <div className="space-y-3">
-              {bookmarks.length === 0 ? (
-                <div className="text-center py-12 text-slate-400 text-sm">
-                  No bookmarks found in this backup.
-                </div>
-              ) : (
-                bookmarks.map((bm) => (
-                  <div
-                    key={bm.bookmarkId}
-                    className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-xs">
-                        #{bm.slot}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                          {bm.title || 'Bookmark Slot ' + bm.slot}
-                        </h4>
-                        {bm.snippet && (
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-                            {bm.snippet}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {bm.locationTitle && (
-                      <span className="text-xs font-semibold text-theocratic-600 dark:text-theocratic-400">
-                        {bm.locationTitle}
-                      </span>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
+            <BookmarksExplorerView bookmarks={bookmarks} loading={loadingAnalytics} />
           )}
 
           {/* 4. Raw Tables Count View */}

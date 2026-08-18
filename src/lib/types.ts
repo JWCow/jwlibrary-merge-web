@@ -69,6 +69,16 @@ export interface NoteDetail {
   created: string;
   locationTitle?: string;
   colorIndex?: number;
+  locationId?: number | null;
+  mepsLanguage?: number;
+  languageName?: string;
+  publicationCategory?: PublicationCategoryKey;
+  publicationCategoryLabel?: string;
+  keySymbol?: string | null;
+  bookNumber?: number | null;
+  chapterNumber?: number | null;
+  documentId?: number | null;
+  issueTagNumber?: number | null;
 }
 
 export interface BookmarkDetail {
@@ -77,6 +87,16 @@ export interface BookmarkDetail {
   snippet: string | null;
   slot: number;
   locationTitle?: string;
+  locationId?: number | null;
+  mepsLanguage?: number;
+  languageName?: string;
+  publicationCategory?: PublicationCategoryKey;
+  publicationCategoryLabel?: string;
+  keySymbol?: string | null;
+  bookNumber?: number | null;
+  chapterNumber?: number | null;
+  documentId?: number | null;
+  issueTagNumber?: number | null;
 }
 
 export type PublicationCategoryKey = 
