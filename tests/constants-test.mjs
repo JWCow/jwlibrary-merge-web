@@ -10,6 +10,7 @@ import {
   PUBLICATION_SYMBOLS, 
   getPublicationInfo, 
   getPublicationCategoryBadge, 
+  resolvePublicationCategory,
   SCHEMA_DEFINITIONS, 
   getSchemaDefinition 
 } from '../src/lib/constants.ts';
@@ -19,28 +20,33 @@ test('Domain Constants: MEPS Language mapping and graceful fallbacks', () => {
   assert.equal(getLanguageName(0), 'English');
   assert.equal(getLanguageName(0, false), 'English');
   
-  assert.equal(getLanguageName(39), 'Vietnamese (Tiếng Việt)');
-  assert.equal(getLanguageName(39, false), 'Vietnamese');
-  
   assert.equal(getLanguageName(1), 'Spanish (Español)');
-  assert.equal(getLanguageName(2), 'French (Français)');
-  assert.equal(getLanguageName(4), 'German (Deutsch)');
-  assert.equal(getLanguageName(7), 'Portuguese (Português)');
-  assert.equal(getLanguageName(10), 'Italian (Italiano)');
-  assert.equal(getLanguageName(13), 'Tagalog');
-  assert.equal(getLanguageName(14), 'Japanese (日本語)');
-  assert.equal(getLanguageName(15), 'Russian (Русский)');
-  assert.equal(getLanguageName(24), 'Korean (한국어)');
-  assert.equal(getLanguageName(41), 'Chinese Simplified (简体中文)');
-  assert.equal(getLanguageName(42), 'Chinese Traditional (繁體中文)');
+  assert.equal(getLanguageName(2), 'German (Deutsch)');
+  assert.equal(getLanguageName(3), 'French (Français)');
+  assert.equal(getLanguageName(4), 'Italian (Italiano)');
+  assert.equal(getLanguageName(5), 'Portuguese (Brazil) (Português (Brasil))');
+  assert.equal(getLanguageName(6), 'Dutch (Nederlands)');
+  assert.equal(getLanguageName(7), 'Polish (Polski)');
+  assert.equal(getLanguageName(8), 'Russian (Русский)');
+  assert.equal(getLanguageName(9), 'Japanese (日本語)');
+  assert.equal(getLanguageName(10), 'Swedish (Svenska)');
+  assert.equal(getLanguageName(15), 'Korean (한국어)');
+  assert.equal(getLanguageName(16), 'Tagalog');
+  assert.equal(getLanguageName(258), 'Vietnamese (Tiếng Việt)');
+  assert.equal(getLanguageName(258, false), 'Vietnamese');
+  assert.equal(getLanguageName(207), 'Russian (Русский)');
+  assert.equal(getLanguageName(785), 'Portuguese (Brazil) (Português (Brasil))');
   assert.equal(getLanguageName(100), 'American Sign Language (ASL)');
 
   // Language info object structure
-  const viInfo = getLanguageInfo(39);
+  const viInfo = getLanguageInfo(258);
   assert.equal(viInfo.name, 'Vietnamese');
   assert.equal(viInfo.nativeName, 'Tiếng Việt');
   assert.equal(viInfo.code, 'vi');
   assert.equal(viInfo.formattedName, 'Vietnamese (Tiếng Việt)');
+
+  // Legacy/alias MEPS ID 39 support
+  assert.equal(getLanguageName(39), 'Vietnamese (Tiếng Việt)');
 
   // Unknown MEPS Language ID fallback
   assert.equal(getLanguageName(9999), 'Language #9999');
@@ -189,6 +195,18 @@ test('Domain Constants: JW publication symbols and category resolution', () => {
 
   const badgeOther = getPublicationCategoryBadge('other');
   assert.equal(badgeOther.label, 'General / Other');
+
+  // resolvePublicationCategory with legacy Type=0 rows
+  assert.equal(resolvePublicationCategory({ keySymbol: 'cl', type: 0 }), 'books_brochures');
+  assert.equal(resolvePublicationCategory({ keySymbol: 'ia', type: 0 }), 'books_brochures');
+  assert.equal(resolvePublicationCategory({ keySymbol: 'bh', type: 0 }), 'books_brochures');
+  assert.equal(resolvePublicationCategory({ keySymbol: 'km', issueTagNumber: 20150700, type: 0 }), 'books_brochures');
+  assert.equal(resolvePublicationCategory({ keySymbol: 'mwb', issueTagNumber: 20160500, type: 0 }), 'workbook');
+  assert.equal(resolvePublicationCategory({ keySymbol: 'w', issueTagNumber: 20160400, type: 0 }), 'watchtower');
+  assert.equal(resolvePublicationCategory({ keySymbol: 'rbi8', bookNumber: 1, type: 0 }), 'bible');
+  assert.equal(resolvePublicationCategory({ keySymbol: 'nwt', bookNumber: 40, type: 0 }), 'bible');
+  assert.equal(resolvePublicationCategory({ bookNumber: 66, type: 0 }), 'bible');
+  assert.equal(resolvePublicationCategory(null), 'independent_notes');
 });
 
 test('Domain Constants: Schema Definitions & Tooltip dictionary lookup', () => {

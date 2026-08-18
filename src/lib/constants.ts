@@ -49,41 +49,41 @@ export interface SchemaDefinition {
 export const MEPS_LANGUAGES: Record<number, { name: string; nativeName?: string; code?: string }> = {
   0: { name: 'English', nativeName: 'English', code: 'en' },
   1: { name: 'Spanish', nativeName: 'Español', code: 'es' },
-  2: { name: 'French', nativeName: 'Français', code: 'fr' },
-  3: { name: 'Dutch', nativeName: 'Nederlands', code: 'nl' },
-  4: { name: 'German', nativeName: 'Deutsch', code: 'de' },
-  5: { name: 'Swedish', nativeName: 'Svenska', code: 'sv' },
-  6: { name: 'Danish', nativeName: 'Dansk', code: 'da' },
-  7: { name: 'Portuguese', nativeName: 'Português', code: 'pt' },
-  8: { name: 'Polish', nativeName: 'Polski', code: 'pl' },
-  9: { name: 'Norwegian', nativeName: 'Norsk', code: 'no' },
-  10: { name: 'Italian', nativeName: 'Italiano', code: 'it' },
-  11: { name: 'Finnish', nativeName: 'Suomi', code: 'fi' },
-  12: { name: 'Greek', nativeName: 'Ελληνική', code: 'el' },
-  13: { name: 'Tagalog', nativeName: 'Tagalog', code: 'tl' },
-  14: { name: 'Japanese', nativeName: '日本語', code: 'ja' },
-  15: { name: 'Russian', nativeName: 'Русский', code: 'ru' },
-  16: { name: 'Cebuano', nativeName: 'Cebuano', code: 'ceb' },
-  17: { name: 'Iloko', nativeName: 'Iloko', code: 'ilo' },
-  18: { name: 'Hiligaynon', nativeName: 'Hiligaynon', code: 'hil' },
-  19: { name: 'Arabic', nativeName: 'العربية', code: 'ar' },
+  2: { name: 'German', nativeName: 'Deutsch', code: 'de' },
+  3: { name: 'French', nativeName: 'Français', code: 'fr' },
+  4: { name: 'Italian', nativeName: 'Italiano', code: 'it' },
+  5: { name: 'Portuguese (Brazil)', nativeName: 'Português (Brasil)', code: 'pt' },
+  6: { name: 'Dutch', nativeName: 'Nederlands', code: 'nl' },
+  7: { name: 'Polish', nativeName: 'Polski', code: 'pl' },
+  8: { name: 'Russian', nativeName: 'Русский', code: 'ru' },
+  9: { name: 'Japanese', nativeName: '日本語', code: 'ja' },
+  10: { name: 'Swedish', nativeName: 'Svenska', code: 'sv' },
+  11: { name: 'Danish', nativeName: 'Dansk', code: 'da' },
+  12: { name: 'Finnish', nativeName: 'Suomi', code: 'fi' },
+  13: { name: 'Norwegian', nativeName: 'Norsk', code: 'no' },
+  14: { name: 'Greek', nativeName: 'Ελληνική', code: 'el' },
+  15: { name: 'Korean', nativeName: '한국어', code: 'ko' },
+  16: { name: 'Tagalog', nativeName: 'Tagalog', code: 'tl' },
+  17: { name: 'Cebuano', nativeName: 'Cebuano', code: 'ceb' },
+  18: { name: 'Iloko', nativeName: 'Iloko', code: 'ilo' },
+  19: { name: 'Hiligaynon', nativeName: 'Hiligaynon', code: 'hil' },
   20: { name: 'Romanian', nativeName: 'Română', code: 'ro' },
-  21: { name: 'Hindi', nativeName: 'हिन्दी', code: 'hi' },
-  22: { name: 'Hungarian', nativeName: 'Magyar', code: 'hu' },
-  23: { name: 'Czech', nativeName: 'Čeština', code: 'cs' },
-  24: { name: 'Korean', nativeName: '한국어', code: 'ko' },
-  25: { name: 'Bulgarian', nativeName: 'Български', code: 'bg' },
-  26: { name: 'Slovak', nativeName: 'Slovenčina', code: 'sk' },
-  27: { name: 'Thai', nativeName: 'ภาษาไทย', code: 'th' },
+  21: { name: 'Hungarian', nativeName: 'Magyar', code: 'hu' },
+  22: { name: 'Czech', nativeName: 'Čeština', code: 'cs' },
+  23: { name: 'Slovak', nativeName: 'Slovenčina', code: 'sk' },
+  24: { name: 'Croatian', nativeName: 'Hrvatski', code: 'hr' },
+  25: { name: 'Serbian', nativeName: 'Српски', code: 'sr' },
+  26: { name: 'Bulgarian', nativeName: 'Български', code: 'bg' },
+  27: { name: 'Ukrainian', nativeName: 'Українська', code: 'uk' },
   28: { name: 'Turkish', nativeName: 'Türkçe', code: 'tr' },
-  29: { name: 'Ukrainian', nativeName: 'Українська', code: 'uk' },
-  30: { name: 'Swahili', nativeName: 'Kiswahili', code: 'sw' },
-  31: { name: 'Croatian', nativeName: 'Hrvatski', code: 'hr' },
-  32: { name: 'Serbian', nativeName: 'Српски', code: 'sr' },
-  33: { name: 'Afrikaans', nativeName: 'Afrikaans', code: 'af' },
-  34: { name: 'Indonesian', nativeName: 'Bahasa Indonesia', code: 'id' },
-  35: { name: 'Chinese Simplified (Pinyin)', code: 'zh-pinyin' },
-  36: { name: 'Chinese Traditional (Yale)', code: 'zh-yale' },
+  29: { name: 'Arabic', nativeName: 'العربية', code: 'ar' },
+  30: { name: 'Hebrew', nativeName: 'עברית', code: 'he' },
+  31: { name: 'Chinese Simplified', nativeName: '简体中文', code: 'chs' },
+  32: { name: 'Chinese Traditional', nativeName: '繁體中文', code: 'cht' },
+  33: { name: 'Indonesian', nativeName: 'Bahasa Indonesia', code: 'id' },
+  34: { name: 'Thai', nativeName: 'ภาษาไทย', code: 'th' },
+  35: { name: 'Swahili', nativeName: 'Kiswahili', code: 'sw' },
+  36: { name: 'Afrikaans', nativeName: 'Afrikaans', code: 'af' },
   37: { name: 'Albanian', nativeName: 'Shqip', code: 'sq' },
   38: { name: 'Armenian', nativeName: 'Հայերեն', code: 'hy' },
   39: { name: 'Vietnamese', nativeName: 'Tiếng Việt', code: 'vi' },
@@ -112,7 +112,7 @@ export const MEPS_LANGUAGES: Record<number, { name: string; nativeName?: string;
   62: { name: 'Khmer', nativeName: 'ភាសាខ្មែរ', code: 'km' },
   63: { name: 'Lao', nativeName: 'ພາສາລາວ', code: 'lo' },
   64: { name: 'Persian', nativeName: 'فارسی', code: 'fa' },
-  65: { name: 'Hebrew', nativeName: 'עברית', code: 'he' },
+  65: { name: 'Hindi', nativeName: 'हिन्दी', code: 'hi' },
   66: { name: 'Amharic', nativeName: 'አማርኛ', code: 'am' },
   67: { name: 'Tigrinya', nativeName: 'ትግርኛ', code: 'ti' },
   68: { name: 'Oromo', nativeName: 'Afaan Oromoo', code: 'om' },
@@ -155,7 +155,12 @@ export const MEPS_LANGUAGES: Record<number, { name: string; nativeName?: string;
   108: { name: 'Korean Sign Language', nativeName: 'KSL', code: 'kvk' },
   109: { name: 'Mexican Sign Language', nativeName: 'LSM', code: 'mfs' },
   110: { name: 'Russian Sign Language', nativeName: 'RSL', code: 'rsl' },
-  111: { name: 'Spanish Sign Language', nativeName: 'LSE', code: 'ssp' }
+  111: { name: 'Spanish Sign Language', nativeName: 'LSE', code: 'ssp' },
+  159: { name: 'Papiamento', nativeName: 'Papiamento', code: 'pap' },
+  207: { name: 'Russian', nativeName: 'Русский', code: 'ru' },
+  231: { name: 'Bicol', nativeName: 'Bikol', code: 'bcl' },
+  258: { name: 'Vietnamese', nativeName: 'Tiếng Việt', code: 'vi' },
+  785: { name: 'Portuguese (Brazil)', nativeName: 'Português (Brasil)', code: 'pt' }
 };
 
 /**
@@ -305,8 +310,10 @@ export const PUBLICATION_SYMBOLS: Record<string, { title: string; shortTitle?: s
   nwt: { title: 'New World Translation of the Holy Scriptures', shortTitle: 'NWT Bible', category: 'bible' },
   nwtsty: { title: 'New World Translation of the Holy Scriptures (Study Edition)', shortTitle: 'NWT Study Bible', category: 'bible' },
   bi12: { title: 'New World Translation of the Holy Scriptures (1984 Edition)', shortTitle: 'NWT 1984', category: 'bible' },
+  rbi8: { title: 'New World Translation of the Holy Scriptures (1984 Reference Bible)', shortTitle: 'NWT 1984 Reference', category: 'bible' },
   int: { title: 'The Kingdom Interlinear Translation of the Greek Scriptures', shortTitle: 'Kingdom Interlinear', category: 'bible' },
   lff: { title: 'Enjoy Life Forever!—An Interactive Bible Course', shortTitle: 'Enjoy Life Forever!', category: 'book' },
+  lffi: { title: 'Enjoy Life Forever!—Introductory Bible Lessons', shortTitle: 'Enjoy Life Forever! (Intro)', category: 'brochure' },
   bt: { title: '“Bearing Thorough Witness” About God’s Kingdom', shortTitle: 'Bearing Thorough Witness', category: 'book' },
   rr: { title: 'Pure Worship of Jehovah—Restored At Last!', shortTitle: 'Pure Worship', category: 'book' },
   th: { title: 'Apply Yourself to Reading and Teaching', shortTitle: 'Reading and Teaching', category: 'brochure' },
@@ -346,6 +353,7 @@ export const PUBLICATION_SYMBOLS: Record<string, { title: string; shortTitle?: s
   kl: { title: 'Knowledge That Leads to Everlasting Life', shortTitle: 'Knowledge', category: 'book' },
   pe: { title: 'You Can Live Forever in Paradise on Earth', shortTitle: 'Live Forever (pe)', category: 'book' },
   dx: { title: 'Watch Tower Publications Index', shortTitle: 'Publications Index', category: 'reference' },
+  yb: { title: 'Yearbook of Jehovah’s Witnesses', shortTitle: 'Yearbook', category: 'reference' },
   's-34': { title: 'Public Talk Outline', shortTitle: 'Public Talk Outline', category: 'reference' },
   's-140': { title: 'Our Christian Life and Ministry Meeting Instructions', shortTitle: 'Meeting Instructions', category: 'reference' },
   mrt: { title: 'Media Release / Meeting Research Topics', shortTitle: 'Research Topics', category: 'reference' },
@@ -410,6 +418,16 @@ export function getPublicationInfo(symbol?: string | null): PublicationInfo {
       title: `Life and Ministry Workbook (${rawSymbol})`,
       shortTitle: `Workbook (${rawSymbol})`,
       category: 'workbook'
+    };
+  }
+
+  // Handle Yearbook issue tags like yb15, yb16, yb17
+  if (/^yb\d+/i.test(cleanSymbol) || cleanSymbol === 'yb') {
+    return {
+      symbol: rawSymbol,
+      title: `Yearbook of Jehovah’s Witnesses (${rawSymbol})`,
+      shortTitle: `Yearbook (${rawSymbol})`,
+      category: 'reference'
     };
   }
 
@@ -579,16 +597,16 @@ export function resolvePublicationCategory(loc?: {
 } | null): PublicationCategoryKey {
   if (!loc) return 'independent_notes';
 
+  const sym = (loc.keySymbol || '').toLowerCase().trim();
+
   // 1. Holy Scriptures (Bible)
-  if (
-    (loc.bookNumber !== null && loc.bookNumber !== undefined && loc.bookNumber >= 1 && loc.bookNumber <= 66) ||
-    (loc.keySymbol && ['nwt', 'nwtsty', 'bi12', 'int'].includes(loc.keySymbol.toLowerCase().trim())) ||
-    loc.type === 0
-  ) {
+  // Must have a valid canonical Bible book number (1..66) or a recognized Bible translation symbol
+  const isBibleSymbol = ['nwt', 'nwtsty', 'bi12', 'rbi8', 'int', 'bi10', 'sbi1', 'sbi2', 'by', 'rh'].includes(sym);
+  const hasBibleBookNumber = loc.bookNumber !== null && loc.bookNumber !== undefined && loc.bookNumber >= 1 && loc.bookNumber <= 66;
+
+  if (hasBibleBookNumber || isBibleSymbol) {
     return 'bible';
   }
-
-  const sym = (loc.keySymbol || '').toLowerCase().trim();
 
   // 2. Our Christian Life and Ministry Meeting Workbooks
   if (sym.startsWith('mwb') || sym === 'mwb') {
@@ -605,8 +623,15 @@ export function resolvePublicationCategory(loc?: {
     return 'watchtower';
   }
 
-  // 4. Books, Brochures, Reference, Media
-  if (sym || (loc.documentId !== null && loc.documentId !== undefined) || (loc.title && loc.title.trim()) || loc.type === 1 || loc.type === 2) {
+  // 4. Books, Brochures, Reference, Periodicals, Media
+  if (
+    sym ||
+    (loc.documentId !== null && loc.documentId !== undefined) ||
+    (loc.track !== null && loc.track !== undefined) ||
+    (loc.title && loc.title.trim()) ||
+    loc.type === 1 ||
+    loc.type === 2
+  ) {
     return 'books_brochures';
   }
 

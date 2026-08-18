@@ -48,11 +48,12 @@ export function resolveLocationMetadata(raw: RawLocationRecord): {
     title
   } = raw;
 
+  const sym = (keySymbol || '').toLowerCase().trim();
+
   // 1. Bible Chapter Location
   const isBible = 
     (bookNumber !== null && bookNumber !== undefined && bookNumber >= 1 && bookNumber <= 66) ||
-    (keySymbol && ['nwt', 'nwtsty', 'bi12', 'int'].includes(keySymbol.toLowerCase().trim())) ||
-    type === 0;
+    ['nwt', 'nwtsty', 'bi12', 'rbi8', 'int', 'bi10', 'sbi1', 'sbi2', 'by', 'rh'].includes(sym);
 
   if (isBible) {
     if (bookNumber && bookNumber >= 1 && bookNumber <= 66) {
