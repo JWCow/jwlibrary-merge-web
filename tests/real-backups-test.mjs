@@ -4,8 +4,13 @@ import fs from 'node:fs';
 import JSZip from 'jszip';
 import { extractBookmarkDetails, extractNoteDetails } from '../src/lib/inspect.ts';
 
-test('Real Backup Verification: iPad2 (German & English) Bookmarks and Categories', async () => {
-  const ipadData = fs.readFileSync('./tests/UserDataBackup_2019-03-10_iPad2.jwlibrary');
+test('Real Backup Verification: iPad2 (German & English) Bookmarks and Categories', async (t) => {
+  const filePath = './tests/UserDataBackup_2019-03-10_iPad2.jwlibrary';
+  if (!fs.existsSync(filePath)) {
+    t.skip('Sample backup file not found (skipped in CI environment)');
+    return;
+  }
+  const ipadData = fs.readFileSync(filePath);
   const ipadZip = await JSZip.loadAsync(ipadData);
   const ipadDb = ipadZip.file('userData.db') || ipadZip.file(/^.*\.db$/)[0];
   const ipadDbBuf = await ipadDb.async('nodebuffer');
@@ -48,8 +53,13 @@ test('Real Backup Verification: iPad2 (German & English) Bookmarks and Categorie
   assert.equal(bm9.locationTitle, 'Genesis 2');
 });
 
-test('Real Backup Verification: iPhone (Vietnamese & English) Notes and Language Tagging', async () => {
-  const iphoneData = fs.readFileSync('./tests/UserdataBackup_2026-08-14_iPhone.jwlibrary');
+test('Real Backup Verification: iPhone (Vietnamese & English) Notes and Language Tagging', async (t) => {
+  const filePath = './tests/UserdataBackup_2026-08-14_iPhone.jwlibrary';
+  if (!fs.existsSync(filePath)) {
+    t.skip('Sample backup file not found (skipped in CI environment)');
+    return;
+  }
+  const iphoneData = fs.readFileSync(filePath);
   const iphoneZip = await JSZip.loadAsync(iphoneData);
   const iphoneDb = iphoneZip.file('userData.db') || iphoneZip.file(/^.*\.db$/)[0];
   const iphoneDbBuf = await iphoneDb.async('nodebuffer');
