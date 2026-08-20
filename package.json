@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "tsx tests/merge-test.mjs && tsx tests/constants-test.mjs && tsx tests/analytics-test.mjs && tsx tests/location-test.mjs && tsx tests/faq-test.mjs && tsx tests/notes-bookmarks-filters-test.mjs && tsx tests/real-backups-test.mjs"
+    "test": "tsx tests/merge-test.mjs && tsx tests/constants-test.mjs && tsx tests/analytics-test.mjs && tsx tests/location-test.mjs && tsx tests/faq-test.mjs && tsx tests/notes-bookmarks-filters-test.mjs && tsx tests/format-test.mjs && tsx tests/real-backups-test.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",
