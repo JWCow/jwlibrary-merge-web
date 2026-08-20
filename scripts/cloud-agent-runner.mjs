@@ -19,6 +19,30 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 
+// Auto-load .env from repo root or parent workspace root
+function loadEnv() {
+  const possibleEnvFiles = [
+    path.join(ROOT_DIR, '.env'),
+    path.join(ROOT_DIR, '..', '.env')
+  ];
+  for (const envPath of possibleEnvFiles) {
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8');
+      content.split('\n').forEach(line => {
+        const match = line.trim().match(/^([^=+#]+)=(.*)$/);
+        if (match) {
+          const key = match[1].trim();
+          const value = match[2].trim().replace(/^["']|["']$/g, '');
+          if (!process.env[key]) {
+            process.env[key] = value;
+          }
+        }
+      });
+    }
+  }
+}
+loadEnv();
+
 // CLI / Env inputs
 const TASK_PROMPT = process.env.AGENT_PROMPT || process.argv[2] || '';
 const ISSUE_NUMBER = process.env.ISSUE_NUMBER || '';
@@ -161,7 +185,7 @@ function executeTool(name, args) {
 
 // Model drivers: Gemini vs Claude
 async function runWithGemini(apiKey) {
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
   console.log(`[Cloud Agent] Initializing with Gemini Model: ${model}`);
   
   const functionDeclarations = TOOLS.map(t => ({
