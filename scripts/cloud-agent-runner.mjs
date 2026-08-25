@@ -405,10 +405,11 @@ async function main() {
   if (agyAvailable) {
     console.log('[Cloud Agent] Running with Antigravity CLI agy ($20/mo Google subscription)');
     const prompt = fullPrompt + '\n\nEnsure that you run `npm test` to verify your changes, write the list of modified files to `.agent_modified_files.json`, and output a structured PR summary into `.agent_pr_summary.md`.';
-    const agyProc = spawnSync('agy', ['--dangerously-skip-permissions', '--disable-slash-commands', '-p', prompt], {
+    const agyProc = spawnSync('agy', ['--dangerously-skip-permissions', '--disable-slash-commands'], {
+      input: prompt,
       cwd: ROOT_DIR,
-      stdio: 'inherit',
-      shell: true
+      stdio: ['pipe', 'inherit', 'inherit'],
+      encoding: 'utf8'
     });
     if (agyProc.error || agyProc.status !== 0) {
       throw new Error(`agy failed: ${agyProc.stderr || agyProc.error?.message}`);
