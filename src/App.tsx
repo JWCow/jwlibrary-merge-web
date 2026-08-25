@@ -5,6 +5,7 @@ import { MergerPage } from './routes/MergerPage';
 import { InspectorPage } from './routes/InspectorPage';
 import { AboutPage } from './routes/AboutPage';
 import { ShieldCheck, Database } from 'lucide-react';
+import { BackupStoreProvider } from './lib/backupStore';
 
 export function App() {
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -29,6 +30,7 @@ export function App() {
 
   return (
     <BrowserRouter>
+      <BackupStoreProvider>
       <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
         
         {/* Navigation Bar */}
@@ -69,6 +71,7 @@ export function App() {
         </footer>
 
       </div>
+      </BackupStoreProvider>
     </BrowserRouter>
   );
 }
