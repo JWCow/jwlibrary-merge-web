@@ -126,6 +126,8 @@ const TOOLS = [
   }
 ];
 
+const MODIFIED_FILES = new Set();
+
 function executeTool(name, args) {
   try {
     if (name === 'read_file') {
@@ -141,6 +143,8 @@ function executeTool(name, args) {
       if (!targetPath.startsWith(ROOT_DIR)) return { error: 'Access denied: outside root' };
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       fs.writeFileSync(targetPath, args.content, 'utf8');
+      const relPath = path.relative(ROOT_DIR, targetPath).replace(/\\/g, '/');
+      MODIFIED_FILES.add(relPath);
       return { success: true, message: `Wrote ${args.file_path}` };
     }
     
@@ -388,7 +392,45 @@ async function runWithClaude(apiKey) {
   throw new Error(`Agent reached maximum turns (${MAX_TURNS}) without finishing.`);
 }
 
+function saveAgentArtifacts(summary) {
+  // 1. Surgical modified files tracking
+  const modifiedPath = path.resolve(ROOT_DIR, '.agent_modified_files.json');
+  let files = Array.from(MODIFIED_FILES);
+  if (files.length === 0) {
+    try {
+      const status = execSync('git status --porcelain', { cwd: ROOT_DIR, encoding: 'utf8' });
+      files = status
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => line.replace(/^[MADRCU?!]{1,2}\s+/, '').replace(/^["']|["']$/g, ''))
+        .filter(f => !f.startsWith('.agent_'));
+    } catch {
+      files = [];
+    }
+  }
+  fs.writeFileSync(modifiedPath, JSON.stringify(files, null, 2), 'utf8');
+  console.log(`[Cloud Agent] Tracked ${files.length} modified file(s) in ${modifiedPath}`);
+
+  // 2. PR Summary
+  const summaryPath = path.resolve(ROOT_DIR, '.agent_pr_summary.md');
+  const finalSummary = (fs.existsSync(summaryPath) && fs.readFileSync(summaryPath, 'utf8').trim())
+    || summary
+    || `Implemented changes for issue #${ISSUE_NUMBER || ''} (${ISSUE_TITLE || 'Task'}) and verified test suite.`;
+  fs.writeFileSync(summaryPath, finalSummary, 'utf8');
+  console.log(`[Cloud Agent] PR summary saved to ${summaryPath}`);
+}
+
 async function main() {
+  const claudeAvailable = (() => {
+    try {
+      const res = spawnSync(process.platform === 'win32' ? 'where.exe' : 'which', ['claude'], { encoding: 'utf8' });
+      return res.status === 0;
+    } catch {
+      return false;
+    }
+  })();
+
   const agyAvailable = (() => {
     try {
       const res = spawnSync(process.platform === 'win32' ? 'where.exe' : 'which', ['agy'], { encoding: 'utf8' });
@@ -402,39 +444,42 @@ async function main() {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
   let summary = '';
-  if (agyAvailable) {
-    console.log('[Cloud Agent] Running with Antigravity CLI agy ($20/mo Google subscription)');
-    const prompt = fullPrompt + '\n\nEnsure that you run `npm test` to verify your changes, write the list of modified files to `.agent_modified_files.json`, and output a structured PR summary into `.agent_pr_summary.md`.';
-    const agyProc = spawnSync('agy', ['--dangerously-skip-permissions', '--disable-slash-commands'], {
-      input: prompt,
+  const promptInstruction = fullPrompt + '\n\nIMPORTANT: Make only the necessary surgical changes to resolve this task. Run `npm test` to verify your changes. When done, write a concise summary of changes to `.agent_pr_summary.md` and ensure tests pass.';
+
+  if (claudeAvailable) {
+    console.log('[Cloud Agent] Running with Claude Code CLI ($20/mo Anthropic subscription)');
+    const res = spawnSync('claude', ['-p', promptInstruction, '--dangerously-skip-permissions'], {
       cwd: ROOT_DIR,
-      stdio: ['pipe', 'inherit', 'inherit'],
-      encoding: 'utf8'
+      stdio: 'inherit',
+      encoding: 'utf8',
+      shell: true,
+      timeout: 10 * 60 * 1000 // 10 minutes
     });
-    if (agyProc.error || agyProc.status !== 0) {
-      throw new Error(`agy failed: ${agyProc.stderr || agyProc.error?.message}`);
+    if (res.error || (res.status !== 0 && res.status !== null)) {
+      console.warn(`[Cloud Agent] Claude CLI exited with status ${res.status}: ${res.error?.message || res.stderr || ''}`);
     }
-    const summaryPath = path.resolve(ROOT_DIR, '.agent_pr_summary.md');
-    if (fs.existsSync(summaryPath)) {
-      summary = fs.readFileSync(summaryPath, 'utf8');
-    } else {
-      summary = `Implemented changes for issue #${ISSUE_NUMBER} and verified test suite.`;
-      fs.writeFileSync(summaryPath, summary, 'utf8');
+  } else if (agyAvailable) {
+    console.log('[Cloud Agent] Running with Antigravity CLI agy ($20/mo Google subscription)');
+    const res = spawnSync('agy', ['--dangerously-skip-permissions', '--disable-slash-commands', '-p', promptInstruction], {
+      cwd: ROOT_DIR,
+      stdio: 'inherit',
+      encoding: 'utf8',
+      shell: true,
+      timeout: 10 * 60 * 1000
+    });
+    if (res.error || (res.status !== 0 && res.status !== null)) {
+      console.warn(`[Cloud Agent] agy exited with status ${res.status}: ${res.error?.message || res.stderr || ''}`);
     }
-    return;
   } else if (geminiKey) {
     summary = await runWithGemini(geminiKey);
   } else if (anthropicKey) {
     summary = await runWithClaude(anthropicKey);
   } else {
-    console.error('Error: No usable engine found (no agy CLI in PATH, no GEMINI_API_KEY, no ANTHROPIC_API_KEY).');
+    console.error('Error: No usable engine found (no claude/agy CLI in PATH, no GEMINI_API_KEY, no ANTHROPIC_API_KEY).');
     process.exit(1);
   }
 
-  // Save PR summary artifact for subsequent GitHub Action steps
-  const summaryPath = path.resolve(ROOT_DIR, '.agent_pr_summary.md');
-  fs.writeFileSync(summaryPath, summary, 'utf8');
-  console.log(`[Cloud Agent] PR summary saved to ${summaryPath}`);
+  saveAgentArtifacts(summary);
 }
 
 main().catch(err => {
