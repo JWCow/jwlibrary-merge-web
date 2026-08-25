@@ -289,11 +289,11 @@ export const LocationExplorerView: React.FC<LocationExplorerViewProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             
             {/* Language Selector */}
             {uniqueLanguages.length > 1 && (
-              <div className="relative flex-shrink-0">
+              <div className="relative flex-1 sm:flex-initial">
                 <select
                   value={languageFilter}
                   onChange={(e) => {
@@ -302,7 +302,7 @@ export const LocationExplorerView: React.FC<LocationExplorerViewProps> = ({
                     setCurrentPage(1);
                   }}
                   aria-label="Filter by Language"
-                  className="appearance-none pl-8 pr-8 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-theocratic-500 cursor-pointer"
+                  className="w-full sm:w-auto appearance-none pl-8 pr-8 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-theocratic-500 cursor-pointer"
                 >
                   <option value="all">All Languages ({locations.length})</option>
                   {uniqueLanguages.map(l => (
@@ -317,7 +317,7 @@ export const LocationExplorerView: React.FC<LocationExplorerViewProps> = ({
             )}
 
             {/* Sort Selector */}
-            <div className="relative flex-shrink-0">
+            <div className="relative flex-1 sm:flex-initial">
               <select
                 value={sortBy}
                 onChange={(e) => {
@@ -325,15 +325,15 @@ export const LocationExplorerView: React.FC<LocationExplorerViewProps> = ({
                   setCurrentPage(1);
                 }}
                 aria-label="Sort Locations"
-                className="appearance-none pl-8 pr-8 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-theocratic-500 cursor-pointer"
+                className="w-full sm:w-auto appearance-none pl-8 pr-8 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-theocratic-500 cursor-pointer"
               >
-                <option value="density_desc">Most Annotations (Density)</option>
+                <option value="density_desc">Most Annotations</option>
                 <option value="highlights_desc">Most Highlights</option>
                 <option value="notes_desc">Most Notes</option>
                 <option value="title_asc">Title (A → Z)</option>
                 <option value="title_desc">Title (Z → A)</option>
-                <option value="id_asc">Location ID (1 → N)</option>
-                <option value="id_desc">Location ID (N → 1)</option>
+                <option value="id_asc">ID (1 → N)</option>
+                <option value="id_desc">ID (N → 1)</option>
                 <option value="modified_desc">Recently Modified</option>
               </select>
               <ArrowUpDown className="w-3.5 h-3.5 absolute left-2.5 top-3 text-slate-400 pointer-events-none" />

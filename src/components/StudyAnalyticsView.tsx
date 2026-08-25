@@ -372,22 +372,22 @@ export const StudyAnalyticsView: React.FC<StudyAnalyticsViewProps> = ({ analytic
               return (
                 <div
                   key={pub.id}
-                  className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3"
                 >
-                  <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                  <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                     <span className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-xs font-mono flex-shrink-0">
                       #{idx + 1}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate max-w-full">
                           {pub.title}
                         </h4>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${badge.bg} ${badge.color} ${badge.border}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${badge.bg} ${badge.color} ${badge.border} flex-shrink-0`}>
                           {pub.categoryLabel}
                         </span>
                         {pub.languageName && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex-shrink-0">
                             {pub.languageName}
                           </span>
                         )}
@@ -403,7 +403,7 @@ export const StudyAnalyticsView: React.FC<StudyAnalyticsViewProps> = ({ analytic
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 self-end sm:self-center font-mono text-xs text-slate-600 dark:text-slate-400 flex-shrink-0">
+                  <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-center font-mono text-xs text-slate-600 dark:text-slate-400 flex-shrink-0 flex-wrap">
                     <span className="text-amber-600 dark:text-amber-400 font-bold" title="Highlights">
                       {pub.highlightsCount}h
                     </span>
@@ -415,7 +415,7 @@ export const StudyAnalyticsView: React.FC<StudyAnalyticsViewProps> = ({ analytic
                         {pub.bookmarksCount}bm
                       </span>
                     )}
-                    <span className="px-2.5 py-1 rounded-lg bg-theocratic-100 dark:bg-theocratic-950 text-theocratic-700 dark:text-theocratic-300 font-bold text-xs">
+                    <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-theocratic-100 dark:bg-theocratic-950 text-theocratic-700 dark:text-theocratic-300 font-bold text-xs">
                       {pub.totalAnnotations.toLocaleString()} total
                     </span>
                   </div>
@@ -438,7 +438,7 @@ export const StudyAnalyticsView: React.FC<StudyAnalyticsViewProps> = ({ analytic
       {/* 5. The Watchtower Deep Dive (Grouped by Year & Monthly Issues) */}
       {analytics.watchtowerByYear.length > 0 && (
         <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-theocratic-100 dark:bg-theocratic-950 text-theocratic-600 dark:text-theocratic-400 flex items-center justify-center">
                 <Calendar className="w-4 h-4" />
@@ -468,25 +468,25 @@ export const StudyAnalyticsView: React.FC<StudyAnalyticsViewProps> = ({ analytic
                 >
                   <button
                     onClick={() => toggleWtYear(wtYear.year)}
-                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors"
+                    className="w-full p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-left hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="text-slate-400">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="text-slate-400 flex-shrink-0">
                         {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                       </div>
-                      <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                      <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
                         The Watchtower {wtYear.year > 0 ? wtYear.year : 'Special / Undated'}
                       </span>
-                      <span className="text-xs text-slate-400 font-mono">
+                      <span className="text-[11px] text-slate-400 font-mono flex-shrink-0">
                         ({wtYear.issues.length} {wtYear.issues.length === 1 ? 'issue' : 'issues'})
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 font-mono text-xs">
-                      <span className="text-slate-500 dark:text-slate-400 font-semibold">
+                    <div className="flex items-center gap-2 font-mono text-xs self-end sm:self-center flex-shrink-0">
+                      <span className="text-slate-500 dark:text-slate-400 font-semibold text-[11px] sm:text-xs">
                         {wtYear.highlightsCount} marks, {wtYear.notesCount} notes
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-full bg-theocratic-100 dark:bg-theocratic-950 text-theocratic-700 dark:text-theocratic-300 font-bold">
+                      <span className="px-2 sm:px-2.5 py-0.5 rounded-full bg-theocratic-100 dark:bg-theocratic-950 text-theocratic-700 dark:text-theocratic-300 font-bold text-[11px] sm:text-xs">
                         {wtYear.totalAnnotations} total
                       </span>
                     </div>

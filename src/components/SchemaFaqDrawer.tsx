@@ -134,33 +134,33 @@ export const SchemaFaqDrawer: React.FC<SchemaFaqDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="faq-drawer-heading"
-        className="relative w-full max-w-2xl sm:max-w-3xl h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300 overflow-hidden"
+        className="relative w-full max-w-full sm:max-w-2xl lg:max-w-3xl h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300 overflow-hidden"
       >
         
         {/* Sticky Header */}
-        <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm sticky top-0 z-20 space-y-3">
+        <div className="p-3.5 sm:p-6 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm sticky top-0 z-20 space-y-3">
           
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-theocratic-100 dark:bg-theocratic-950/80 text-theocratic-600 dark:text-theocratic-300 flex items-center justify-center flex-shrink-0 shadow-sm">
-                <BookOpen className="w-5 h-5" />
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-theocratic-100 dark:bg-theocratic-950/80 text-theocratic-600 dark:text-theocratic-300 flex items-center justify-center flex-shrink-0 shadow-sm">
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 
                   id="faq-drawer-heading" 
-                  className="font-extrabold text-lg sm:text-xl text-slate-900 dark:text-slate-100 flex items-center gap-2"
+                  className="font-extrabold text-base sm:text-xl text-slate-900 dark:text-slate-100 truncate"
                 >
-                  <span>Database & Merge Engine Guide</span>
+                  Database & Merge Engine Guide
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  SQLite tables, multi-block highlight healing, token offsets & audit telemetry
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
+                  SQLite tables, multi-block healing & telemetry
                 </p>
               </div>
             </div>
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-theocratic-500"
+              className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-theocratic-500 flex-shrink-0"
               aria-label="Close Database Guide & FAQ"
             >
               <X className="w-5 h-5" />
@@ -175,13 +175,13 @@ export const SchemaFaqDrawer: React.FC<SchemaFaqDrawerProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search concepts, tables (UserMark, BlockRange), healing, telemetry..."
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-theocratic-500 transition-all"
+              placeholder="Search concepts, tables (UserMark, BlockRange), healing..."
+              className="w-full pl-10 pr-10 py-2 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-theocratic-500 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="absolute right-3 top-2.5 sm:top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                 aria-label="Clear search query"
               >
                 <X className="w-4 h-4" />
@@ -190,10 +190,10 @@ export const SchemaFaqDrawer: React.FC<SchemaFaqDrawerProps> = ({
           </div>
 
           {/* Quick-Jump Category Navigation Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none -mx-1 px-1 sm:mx-0 sm:px-0">
             <button
               onClick={() => { setSelectedCategory('all'); setSearchQuery(''); }}
-              className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
                 selectedCategory === 'all' && !searchQuery
                   ? 'bg-theocratic-600 text-white shadow-sm'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -206,7 +206,7 @@ export const SchemaFaqDrawer: React.FC<SchemaFaqDrawerProps> = ({
               <button
                 key={topic.id}
                 onClick={() => handleJumpToTopic(topic.id)}
-                className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 flex-shrink-0"
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 flex-shrink-0"
               >
                 <span>{topic.shortTitle}</span>
               </button>
@@ -216,7 +216,7 @@ export const SchemaFaqDrawer: React.FC<SchemaFaqDrawerProps> = ({
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 scroll-smooth">
+        <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-6 sm:space-y-8 scroll-smooth">
           
           {filteredTopics.length === 0 ? (
             <div className="text-center py-16 space-y-3">

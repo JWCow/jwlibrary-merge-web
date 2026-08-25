@@ -139,7 +139,7 @@ export const DropZone: React.FC<DropZoneProps> = ({ onFilesLoaded, isLoading = f
               Multiple files supported
             </span>
             <span className="px-2.5 py-1 rounded-full bg-emerald-100/70 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
-              100% In-Browser
+              Client-Side SQLite
             </span>
           </div>
         </div>

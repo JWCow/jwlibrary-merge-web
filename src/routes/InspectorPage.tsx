@@ -110,21 +110,21 @@ export const InspectorPage: React.FC = () => {
         <div className="space-y-6">
           
           {/* Top Backup Overview Header */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="w-12 h-12 rounded-xl bg-theocratic-100 dark:bg-theocratic-950 text-theocratic-600 dark:text-theocratic-400 flex items-center justify-center flex-shrink-0">
-                <Database className="w-6 h-6" />
+          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-theocratic-100 dark:bg-theocratic-950 text-theocratic-600 dark:text-theocratic-400 flex items-center justify-center flex-shrink-0">
+                <Database className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-bold text-lg text-slate-900 dark:text-slate-100 truncate">
+                  <h2 className="font-bold text-base sm:text-lg text-slate-900 dark:text-slate-100 truncate max-w-full">
                     {backup.fileName}
                   </h2>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-theocratic-50 dark:bg-theocratic-950 text-theocratic-700 dark:text-theocratic-300 border border-theocratic-200 dark:border-theocratic-800">
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-theocratic-50 dark:bg-theocratic-950 text-theocratic-700 dark:text-theocratic-300 border border-theocratic-200 dark:border-theocratic-800 flex-shrink-0">
                     {backup.deviceName}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap font-mono">
+                <div className="flex items-center gap-2 sm:gap-3 text-xs text-slate-500 mt-1 flex-wrap font-mono">
                   <span>Modified: {new Date(backup.lastModifiedDate).toLocaleDateString()}</span>
                   <span className="flex items-center gap-1">
                     Schema: v{backup.schemaVersion}
@@ -138,10 +138,10 @@ export const InspectorPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-end sm:self-center">
+            <div className="flex items-center gap-2 self-start sm:self-center flex-shrink-0">
               <button
                 onClick={handleRepairAndDownload}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
+                className="px-3.5 sm:px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
                 title="Recalculate SHA-256 hash and fix ZIP manifest ordering"
               >
                 <Wrench className="w-3.5 h-3.5" />
