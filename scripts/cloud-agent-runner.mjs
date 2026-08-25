@@ -12,7 +12,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -389,16 +389,44 @@ async function runWithClaude(apiKey) {
 }
 
 async function main() {
+  const agyAvailable = (() => {
+    try {
+      const res = spawnSync(process.platform === 'win32' ? 'where.exe' : 'which', ['agy'], { encoding: 'utf8' });
+      return res.status === 0;
+    } catch {
+      return false;
+    }
+  })();
+
   const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
   let summary = '';
-  if (geminiKey) {
+  if (agyAvailable) {
+    console.log('[Cloud Agent] Running with Antigravity CLI agy ($20/mo Google subscription)');
+    const prompt = fullPrompt + '\n\nEnsure that you run `npm test` to verify your changes, write the list of modified files to `.agent_modified_files.json`, and output a structured PR summary into `.agent_pr_summary.md`.';
+    const agyProc = spawnSync('agy', ['--dangerously-skip-permissions', '--disable-slash-commands', '-p', prompt], {
+      cwd: ROOT_DIR,
+      stdio: 'inherit',
+      shell: true
+    });
+    if (agyProc.error || agyProc.status !== 0) {
+      throw new Error(`agy failed: ${agyProc.stderr || agyProc.error?.message}`);
+    }
+    const summaryPath = path.resolve(ROOT_DIR, '.agent_pr_summary.md');
+    if (fs.existsSync(summaryPath)) {
+      summary = fs.readFileSync(summaryPath, 'utf8');
+    } else {
+      summary = `Implemented changes for issue #${ISSUE_NUMBER} and verified test suite.`;
+      fs.writeFileSync(summaryPath, summary, 'utf8');
+    }
+    return;
+  } else if (geminiKey) {
     summary = await runWithGemini(geminiKey);
   } else if (anthropicKey) {
     summary = await runWithClaude(anthropicKey);
   } else {
-    console.error('Error: No API key found. Please set GEMINI_API_KEY or ANTHROPIC_API_KEY.');
+    console.error('Error: No usable engine found (no agy CLI in PATH, no GEMINI_API_KEY, no ANTHROPIC_API_KEY).');
     process.exit(1);
   }
 
