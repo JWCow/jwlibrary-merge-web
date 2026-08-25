@@ -448,9 +448,11 @@ async function main() {
 
   if (claudeAvailable) {
     console.log('[Cloud Agent] Running with Claude Code CLI ($20/mo Anthropic subscription)');
-    const res = spawnSync('claude', ['-p', promptInstruction, '--dangerously-skip-permissions'], {
+    fs.writeFileSync(path.resolve(ROOT_DIR, '.agent_engine'), 'claude_code', 'utf8');
+    const res = spawnSync('claude', ['-p', '--dangerously-skip-permissions'], {
+      input: promptInstruction,
       cwd: ROOT_DIR,
-      stdio: 'inherit',
+      stdio: ['pipe', 'inherit', 'inherit'],
       encoding: 'utf8',
       shell: true,
       timeout: 10 * 60 * 1000 // 10 minutes
@@ -460,6 +462,7 @@ async function main() {
     }
   } else if (agyAvailable) {
     console.log('[Cloud Agent] Running with Antigravity CLI agy ($20/mo Google subscription)');
+    fs.writeFileSync(path.resolve(ROOT_DIR, '.agent_engine'), 'antigravity', 'utf8');
     const res = spawnSync('agy', ['--dangerously-skip-permissions', '--disable-slash-commands', '-p', promptInstruction], {
       cwd: ROOT_DIR,
       stdio: 'inherit',
@@ -471,8 +474,10 @@ async function main() {
       console.warn(`[Cloud Agent] agy exited with status ${res.status}: ${res.error?.message || res.stderr || ''}`);
     }
   } else if (geminiKey) {
+    fs.writeFileSync(path.resolve(ROOT_DIR, '.agent_engine'), 'gemini', 'utf8');
     summary = await runWithGemini(geminiKey);
   } else if (anthropicKey) {
+    fs.writeFileSync(path.resolve(ROOT_DIR, '.agent_engine'), 'claude_api', 'utf8');
     summary = await runWithClaude(anthropicKey);
   } else {
     console.error('Error: No usable engine found (no claude/agy CLI in PATH, no GEMINI_API_KEY, no ANTHROPIC_API_KEY).');
