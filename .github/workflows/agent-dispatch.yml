@@ -68,7 +68,12 @@ jobs:
           elif [ "$EVENT_NAME" = "issue_comment" ]; then
             NUM="$ISSUE_NUMBER"
             TITLE="$ISSUE_TITLE"
-            PROMPT=$(echo "$COMMENT_BODY" | sed 's/^\/agent[[:space:]]*//')
+            COMMENT_PROMPT=$(echo "$COMMENT_BODY" | sed 's/^\/agent[[:space:]]*//')
+            if [ -n "$COMMENT_PROMPT" ]; then
+              PROMPT="$COMMENT_PROMPT"
+            else
+              PROMPT="$ISSUE_BODY"
+            fi
           else
             NUM="$ISSUE_NUMBER"
             TITLE="$ISSUE_TITLE"
