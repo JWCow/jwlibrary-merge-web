@@ -2,7 +2,7 @@ name: Autonomous Cloud Agent Dispatch
 
 on:
   issues:
-    types: [labeled]
+    types: [opened, labeled]
   issue_comment:
     types: [created]
   workflow_dispatch:
@@ -26,7 +26,11 @@ jobs:
     # Trigger if issue is labeled 'agent' or 'ready-for-agent', OR if an issue comment starts with '/agent', OR on manual dispatch
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issues' && (github.event.label.name == 'agent' || github.event.label.name == 'ready-for-agent')) ||
+      (github.event_name == 'issues' && (
+        (github.event.label != null && (github.event.label.name == 'agent' || github.event.label.name == 'ready-for-agent')) ||
+        contains(github.event.issue.labels.*.name, 'ready-for-agent') ||
+        contains(github.event.issue.labels.*.name, 'agent')
+      )) ||
       (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/agent'))
     runs-on: ubuntu-latest
 
@@ -39,7 +43,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
@@ -47,24 +51,37 @@ jobs:
 
       - name: Prepare Agent Task Context
         id: prep
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TASK_PROMPT: ${{ github.event.inputs.task_prompt }}
+          INPUT_ISSUE_NUMBER: ${{ github.event.inputs.issue_number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          RUN_ID: ${{ github.run_id }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "issue_number=${{ github.event.inputs.issue_number || 'manual' }}" >> $GITHUB_OUTPUT
-            echo "issue_title=Manual Dispatch: ${{ github.event.inputs.task_prompt }}" >> $GITHUB_OUTPUT
-            echo "agent_prompt=${{ github.event.inputs.task_prompt }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event_name }}" = "issue_comment" ]; then
-            echo "issue_number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
-            echo "issue_title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
-            CLEAN_PROMPT=$(echo "${{ github.event.comment.body }}" | sed 's/^\/agent[[:space:]]*//')
-            echo "agent_prompt=$CLEAN_PROMPT" >> $GITHUB_OUTPUT
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            NUM="${INPUT_ISSUE_NUMBER:-manual}"
+            TITLE="Manual Dispatch: $INPUT_TASK_PROMPT"
+            PROMPT="$INPUT_TASK_PROMPT"
+          elif [ "$EVENT_NAME" = "issue_comment" ]; then
+            NUM="$ISSUE_NUMBER"
+            TITLE="$ISSUE_TITLE"
+            PROMPT=$(echo "$COMMENT_BODY" | sed 's/^\/agent[[:space:]]*//')
           else
-            echo "issue_number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
-            echo "issue_title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
-            echo "agent_prompt=${{ github.event.issue.body }}" >> $GITHUB_OUTPUT
+            NUM="$ISSUE_NUMBER"
+            TITLE="$ISSUE_TITLE"
+            PROMPT="$ISSUE_BODY"
           fi
-          
-          BRANCH="agent/run-${{ github.run_id }}"
-          echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
+
+          echo "issue_number=$NUM" >> "$GITHUB_OUTPUT"
+          echo "issue_title=$TITLE" >> "$GITHUB_OUTPUT"
+          echo "branch_name=agent/run-$RUN_ID" >> "$GITHUB_OUTPUT"
+
+          echo "agent_prompt<<AGENT_EOF" >> "$GITHUB_OUTPUT"
+          echo "$PROMPT" >> "$GITHUB_OUTPUT"
+          echo "AGENT_EOF" >> "$GITHUB_OUTPUT"
 
       - name: Acknowledge on Issue
         if: github.event_name != 'workflow_dispatch'
