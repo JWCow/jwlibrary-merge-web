@@ -13,15 +13,15 @@ export const Navbar: React.FC<NavbarProps> = ({ darkMode, setDarkMode }) => {
   const [showQR, setShowQR] = useState(false);
 
   const navLinks = [
-    { path: '/', label: 'Merger Tool', icon: Layers },
-    { path: '/inspect', label: 'Backup Explorer', icon: Search },
-    { path: '/about', label: 'Privacy & Guide', icon: ShieldCheck },
+    { path: '/', label: 'Merger Tool', shortLabel: 'Merger', icon: Layers },
+    { path: '/inspect', label: 'Backup Explorer', shortLabel: 'Explorer', icon: Search },
+    { path: '/about', label: 'Privacy & Guide', shortLabel: 'Guide', icon: ShieldCheck },
   ];
 
   return (
     <>
       <header className="sticky top-0 z-40 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 overflow-hidden">
           
           {/* Brand */}
           <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group flex-shrink-0">
@@ -32,14 +32,14 @@ export const Navbar: React.FC<NavbarProps> = ({ darkMode, setDarkMode }) => {
               <span className="font-bold text-base sm:text-lg bg-gradient-to-r from-theocratic-700 via-theocratic-600 to-theocratic-500 dark:from-theocratic-300 dark:to-theocratic-400 bg-clip-text text-transparent block">
                 JWL Merger
               </span>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden md:block">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden xl:block">
                 Merge .jwlibrary backups in your browser
               </p>
             </div>
           </Link>
 
           {/* Navigation Tabs */}
-          <nav className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <nav className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
             {navLinks.map((link) => {
               const Icon = link.icon;
               const active = location.pathname === link.path;
@@ -55,20 +55,21 @@ export const Navbar: React.FC<NavbarProps> = ({ darkMode, setDarkMode }) => {
                   }`}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">{link.label}</span>
+                  <span className="hidden sm:inline lg:hidden">{link.shortLabel}</span>
+                  <span className="hidden lg:inline">{link.label}</span>
                 </Link>
               );
             })}
 
-            {/* Open on Phone / QR Code */}
+            {/* Open on Phone / QR Code - desktop only */}
             <button
               onClick={() => setShowQR(true)}
-              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-theocratic-600 dark:hover:text-theocratic-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-theocratic-600 dark:hover:text-theocratic-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
               title="Open on iPhone / iPad (Scan QR Code)"
               aria-label="Open on Mobile via QR"
             >
               <QrCode className="w-4 h-4 text-theocratic-500 flex-shrink-0" />
-              <span className="hidden lg:inline">Mobile QR</span>
+              <span>Mobile QR</span>
             </button>
 
             {/* Theme Toggle */}

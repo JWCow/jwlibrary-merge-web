@@ -142,30 +142,31 @@ export const MergerPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="max-w-4xl mx-auto px-3 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 w-full max-w-full overflow-hidden">
       
       {/* Hero Header */}
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-theocratic-100 dark:bg-theocratic-950/80 text-theocratic-700 dark:text-theocratic-300 text-xs font-semibold border border-theocratic-200 dark:border-theocratic-800/80 shadow-sm">
-          <Sparkles className="w-3.5 h-3.5" /> JW Library Backup Merger • Safe & Lossless
+      <div className="text-center space-y-2.5 sm:space-y-3">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-theocratic-100 dark:bg-theocratic-950/80 text-theocratic-700 dark:text-theocratic-300 text-[11px] sm:text-xs font-semibold border border-theocratic-200 dark:border-theocratic-800/80 shadow-sm max-w-full">
+          <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+          <span className="truncate">Fast & Safe Backup Merger</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+        <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
           Merge JW Library Backups
         </h1>
-        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
-          Combine notes, highlights, bookmarks, and tags from your phone, tablet, and PC into one single, unified <code className="font-mono text-xs bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">.jwlibrary</code> file.
+        <p className="text-xs sm:text-base text-slate-600 dark:text-slate-400 max-w-xl mx-auto px-2">
+          Combine notes, highlights, bookmarks, and tags from phone, tablet, and PC into one unified <code className="font-mono text-xs bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded break-all">.jwlibrary</code> file.
         </p>
       </div>
 
       {/* Privacy Guarantee Pill */}
-      <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-emerald-800 dark:text-emerald-300">
-        <div className="flex items-center gap-2.5">
-          <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-          <span>
-            <strong>Private on Your Device:</strong> Backups are processed directly inside your browser. No files or personal notes are ever uploaded to a server.
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-xs sm:text-sm text-emerald-800 dark:text-emerald-300">
+        <div className="flex items-start sm:items-center gap-2 min-w-0">
+          <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+          <span className="leading-snug">
+            <strong>Private on Your Device:</strong> Backups are processed directly inside your browser. No files or personal notes are uploaded to any server.
           </span>
         </div>
-        <div className="flex items-center gap-1.5 font-mono text-xs bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-1 rounded-lg flex-shrink-0">
+        <div className="flex items-center gap-1.5 font-mono text-[11px] sm:text-xs bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-1 rounded-lg flex-shrink-0 self-start sm:self-auto">
           <Lock className="w-3 h-3" /> In-Browser Only
         </div>
       </div>
@@ -286,7 +287,7 @@ export const MergerPage: React.FC = () => {
       )}
 
       {/* Friendly Feature Highlights */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 pt-4 sm:pt-6">
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
           <div className="w-9 h-9 rounded-xl bg-theocratic-100 dark:bg-theocratic-950 text-theocratic-600 dark:text-theocratic-300 flex items-center justify-center">
             <Lock className="w-4 h-4" />

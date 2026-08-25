@@ -8,7 +8,7 @@ import {
 
 export const AboutPage: React.FC = () => {
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8 text-slate-800 dark:text-slate-200">
+    <div className="max-w-3xl mx-auto px-3 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 text-slate-800 dark:text-slate-200 w-full max-w-full overflow-hidden">
       
       {/* Title */}
       <div className="text-center sm:text-left space-y-2">
