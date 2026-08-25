@@ -15,7 +15,8 @@ import {
   HardDrive, 
   ChevronDown, 
   ChevronUp, 
-  Sparkles 
+  Sparkles,
+  Search
 } from 'lucide-react';
 import type { BackupMetadata } from '../lib/types';
 import { InfoTooltip } from './InfoTooltip';
@@ -27,6 +28,8 @@ interface BackupCardProps {
   onRemove: (id: string) => void;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
+  /** Opens this backup in the Backup Explorer without losing the loaded set. */
+  onInspect?: (id: string) => void;
 }
 
 export const BackupCard: React.FC<BackupCardProps> = ({
@@ -35,7 +38,8 @@ export const BackupCard: React.FC<BackupCardProps> = ({
   totalBackups,
   onRemove,
   onMoveUp,
-  onMoveDown
+  onMoveDown,
+  onInspect
 }) => {
   const [expanded, setExpanded] = useState(false);
   const isPrimary = index === 0;
@@ -154,6 +158,16 @@ export const BackupCard: React.FC<BackupCardProps> = ({
                   <ArrowDown className="w-4 h-4" />
                 </button>
               </>
+            )}
+            {onInspect && (
+              <button
+                onClick={() => onInspect(backup.id)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-theocratic-600 dark:hover:text-theocratic-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                title="Inspect this backup in the Backup Explorer"
+                aria-label="Inspect this backup"
+              >
+                <Search className="w-4 h-4" />
+              </button>
             )}
             <button
               onClick={() => onRemove(backup.id)}

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DropZone } from '../components/DropZone';
 import { BackupCard } from '../components/BackupCard';
 import { MergeProgress } from '../components/MergeProgress';
 import { MergeReportModal } from '../components/MergeReportModal';
-import { mergeBackups, type MergeResult } from '../lib/merge';
+import { mergeBackups } from '../lib/merge';
+import { inspectBackupFile } from '../lib/inspect';
+import { useBackupStore } from '../lib/backupStore';
 import type { BackupMetadata, MergeProgressState } from '../lib/types';
 import { 
   Sparkles, 
@@ -19,25 +22,36 @@ import {
 } from 'lucide-react';
 
 export const MergerPage: React.FC = () => {
-  const [backups, setBackups] = useState<BackupMetadata[]>([]);
-  const [outputFileName, setOutputFileName] = useState(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return `jwlibrary-merged-${today}.jwlibrary`;
-  });
+  const navigate = useNavigate();
+  const {
+    backups,
+    addBackups,
+    removeBackup,
+    clearBackups,
+    reorderBackups,
+    promoteBackup,
+    selectBackup,
+    outputFileName,
+    setOutputFileName,
+    mergeResult: result,
+    setMergeResult: setResult,
+    mergeLogs,
+    setMergeLogs
+  } = useBackupStore();
+
   const [progress, setProgress] = useState<MergeProgressState>({
     stage: 'idle',
     percent: 0,
     message: ''
   });
-  const [mergeLogs, setMergeLogs] = useState<string[]>([]);
-  const [result, setResult] = useState<MergeResult | null>(null);
   const [isMerging, setIsMerging] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [isOpeningInspector, setIsOpeningInspector] = useState(false);
 
   const generateSmartFileName = (list: BackupMetadata[]) => {
     const today = new Date().toISOString().slice(0, 10);
     if (list.length === 0) return `jwlibrary-merged-${today}.jwlibrary`;
-    
+
     const devices = list.map(b => {
       const combined = `${b.deviceName} ${b.fileName}`.toLowerCase();
       if (combined.includes('ipad')) return 'iPad';
@@ -52,54 +66,58 @@ export const MergerPage: React.FC = () => {
     return `jwlibrary-merged-${unique.join('-')}-${today}.jwlibrary`;
   };
 
-  const handleFilesLoaded = (newBackups: BackupMetadata[]) => {
-    setBackups(prev => {
-      const existing = new Set(prev.map(b => `${b.fileName}-${b.fileSize}`));
-      const filtered = newBackups.filter(b => !existing.has(`${b.fileName}-${b.fileSize}`));
-      const combined = [...prev, ...filtered];
-      setOutputFileName(generateSmartFileName(combined));
-      return combined;
-    });
+  const resetOutcome = () => {
     setResult(null);
     setProgress({ stage: 'idle', percent: 0, message: '' });
+  };
+
+  const handleFilesLoaded = (newBackups: BackupMetadata[]) => {
+    const added = addBackups(newBackups);
+    setOutputFileName(generateSmartFileName([...backups, ...added]));
+    resetOutcome();
   };
 
   const handleRemoveBackup = (id: string) => {
-    setBackups(prev => {
-      const filtered = prev.filter(b => b.id !== id);
-      setOutputFileName(generateSmartFileName(filtered));
-      return filtered;
-    });
-    setResult(null);
-    setProgress({ stage: 'idle', percent: 0, message: '' });
+    removeBackup(id);
+    setOutputFileName(generateSmartFileName(backups.filter(b => b.id !== id)));
+    resetOutcome();
   };
 
-  const handleMoveUp = (index: number) => {
-    if (index === 0) return;
-    setBackups(prev => {
-      const copy = [...prev];
-      const temp = copy[index - 1];
-      copy[index - 1] = copy[index];
-      copy[index] = temp;
-      return copy;
-    });
-  };
+  const handleMoveUp = (index: number) => reorderBackups(index, index - 1);
 
-  const handleMoveDown = (index: number) => {
-    if (index >= backups.length - 1) return;
-    setBackups(prev => {
-      const copy = [...prev];
-      const temp = copy[index + 1];
-      copy[index + 1] = copy[index];
-      copy[index] = temp;
-      return copy;
-    });
-  };
+  const handleMoveDown = (index: number) => reorderBackups(index, index + 1);
 
   const handleClearAll = () => {
-    setBackups([]);
-    setResult(null);
+    clearBackups();
+    setOutputFileName(generateSmartFileName([]));
     setProgress({ stage: 'idle', percent: 0, message: '' });
+  };
+
+  /**
+   * Opens the merged output in the Inspector instead of throwing it away.
+   * The merged blob is re-read as a normal backup so it becomes the new base template.
+   */
+  const handleInspectMerged = async () => {
+    if (!result) return;
+    setIsOpeningInspector(true);
+    try {
+      const mergedFile = new File([result.mergedBlob], result.fileName, {
+        type: 'application/zip'
+      });
+      const metadata = await inspectBackupFile(mergedFile);
+      promoteBackup(metadata);
+      navigate('/inspect');
+    } catch (e) {
+      console.error('Failed to open merged backup in the Inspector:', e);
+    } finally {
+      setIsOpeningInspector(false);
+    }
+  };
+
+  /** Jump straight to the Inspector for one of the already-loaded source backups. */
+  const handleInspectBackup = (id: string) => {
+    selectBackup(id);
+    navigate('/inspect');
   };
 
   const handleStartMerge = async () => {
@@ -177,10 +195,9 @@ export const MergerPage: React.FC = () => {
           <MergeReportModal
             result={result}
             backups={backups}
-            onReset={() => {
-              setResult(null);
-              setProgress({ stage: 'idle', percent: 0, message: '' });
-            }}
+            onInspect={handleInspectMerged}
+            isOpeningInspector={isOpeningInspector}
+            onReset={resetOutcome}
           />
           <div className="pt-2">
             <h3 className="text-xs uppercase font-bold tracking-wider text-slate-400 mb-3 text-center">
@@ -234,6 +251,7 @@ export const MergerPage: React.FC = () => {
                     onRemove={handleRemoveBackup}
                     onMoveUp={handleMoveUp}
                     onMoveDown={handleMoveDown}
+                    onInspect={handleInspectBackup}
                   />
                 ))}
               </div>

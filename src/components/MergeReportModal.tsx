@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { 
   Download, 
   CheckCircle2, 
@@ -16,6 +15,7 @@ import {
   ChevronUp, 
   Copy, 
   Check,
+  Loader2,
   BookOpen,
   Info
 } from 'lucide-react';
@@ -28,12 +28,17 @@ interface MergeReportModalProps {
   result: MergeResult;
   backups: BackupMetadata[];
   onReset: () => void;
+  /** Opens the merged output in the Inspector (it becomes the new base template). */
+  onInspect: () => void;
+  isOpeningInspector?: boolean;
 }
 
 export const MergeReportModal: React.FC<MergeReportModalProps> = ({
   result,
   backups,
-  onReset
+  onReset,
+  onInspect,
+  isOpeningInspector = false
 }) => {
   const [showLogs, setShowLogs] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -102,13 +107,15 @@ export const MergeReportModal: React.FC<MergeReportModalProps> = ({
           </span>
         </button>
 
-        <Link
-          to="/inspect"
-          className="w-full sm:w-auto px-5 py-4 rounded-xl border border-theocratic-200 dark:border-theocratic-800 bg-theocratic-50/50 dark:bg-theocratic-950/40 hover:bg-theocratic-100 dark:hover:bg-theocratic-900/60 text-theocratic-700 dark:text-theocratic-300 font-medium text-sm flex items-center justify-center gap-2 transition-colors"
+        <button
+          onClick={onInspect}
+          disabled={isOpeningInspector}
+          title="Explore the merged database in the Backup Explorer"
+          className="w-full sm:w-auto px-5 py-4 rounded-xl border border-theocratic-200 dark:border-theocratic-800 bg-theocratic-50/50 dark:bg-theocratic-950/40 hover:bg-theocratic-100 dark:hover:bg-theocratic-900/60 disabled:opacity-50 disabled:pointer-events-none text-theocratic-700 dark:text-theocratic-300 font-medium text-sm flex items-center justify-center gap-2 transition-colors"
         >
-          <Search className="w-4 h-4" />
-          <span>Inspect Database</span>
-        </Link>
+          {isOpeningInspector ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+          <span>{isOpeningInspector ? 'Opening Inspector...' : 'Inspect Merged Database'}</span>
+        </button>
 
         <button
           onClick={() => { setFaqTopic(undefined); setIsFaqOpen(true); }}
