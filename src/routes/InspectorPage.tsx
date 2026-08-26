@@ -15,7 +15,8 @@ import {
   BarChart3,
   MapPin,
   BookOpen,
-  Layers
+  Layers,
+  Share2
 } from 'lucide-react';
 import { InfoTooltip } from '../components/InfoTooltip';
 import { StudyAnalyticsView } from '../components/StudyAnalyticsView';
@@ -23,6 +24,7 @@ import { LocationExplorerView } from '../components/LocationExplorerView';
 import { NotesExplorerView } from '../components/NotesExplorerView';
 import { BookmarksExplorerView } from '../components/BookmarksExplorerView';
 import { SchemaFaqDrawer } from '../components/SchemaFaqDrawer';
+import { SelectiveExportView } from '../components/SelectiveExportView';
 
 export const InspectorPage: React.FC = () => {
   const navigate = useNavigate();
@@ -42,7 +44,7 @@ export const InspectorPage: React.FC = () => {
   const [loadingLocations, setLoadingLocations] = useState(false);
   const [notes, setNotes] = useState<NoteDetail[]>([]);
   const [bookmarks, setBookmarks] = useState<BookmarkDetail[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'locations' | 'notes' | 'bookmarks' | 'tables'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'locations' | 'notes' | 'bookmarks' | 'share' | 'tables'>('overview');
   const [repairSuccess, setRepairSuccess] = useState(false);
   const [isFaqOpen, setIsFaqOpen] = useState(false);
   const [faqTopic, setFaqTopic] = useState<string | undefined>(undefined);
@@ -305,6 +307,18 @@ export const InspectorPage: React.FC = () => {
             </button>
 
             <button
+              onClick={() => setActiveTab('share')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0 ${
+                activeTab === 'share'
+                  ? 'bg-theocratic-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Selective Export</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('tables')}
               className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0 ${
                 activeTab === 'tables'
@@ -337,7 +351,17 @@ export const InspectorPage: React.FC = () => {
             <BookmarksExplorerView bookmarks={bookmarks} loading={loadingAnalytics} />
           )}
 
-          {/* 4. Raw Tables Count View */}
+          {/* 5. Selective Export (partial backup) View */}
+          {activeTab === 'share' && (
+            <SelectiveExportView
+              backup={backup}
+              locations={locations}
+              loading={loadingLocations}
+              onSubsetCreated={(subset) => { addBackups([subset]); }}
+            />
+          )}
+
+          {/* 6. Raw Tables Count View */}
           {activeTab === 'tables' && (
             <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
