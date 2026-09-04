@@ -94,14 +94,31 @@ async function main() {
 
   // Engine Priority: 1. AGY (Antigravity) -> 2. Claude Code
   if (agyAvailable) {
-    console.log('🤖 [Agent Runner] Engine: Antigravity CLI (agy) — $25/mo Google Subscription');
+    console.log('🤖 [Agent Runner] Engine: Antigravity CLI (agy) — Gemini 3.8 Flash');
     fs.writeFileSync(path.resolve(ROOT_DIR, '.agent_engine'), 'antigravity', 'utf8');
     
-    const res = spawnSync('agy', ['--dangerously-skip-permissions', '--disable-slash-commands', '-p', fullPrompt], {
+    // Spill task prompt to file to avoid Windows cmd.exe argument length & whitespace splitting
+    const promptFile = path.resolve(ROOT_DIR, '.agent_task_prompt.md');
+    fs.writeFileSync(promptFile, fullPrompt, 'utf8');
+
+    const env = { ...process.env, GEMINI_MODEL: 'gemini-3.8-flash' };
+    Object.keys(env).forEach(k => {
+      if (k.startsWith('ANTIGRAVITY_')) delete env[k];
+    });
+
+    const agyDirective = `Read and execute task instructions in .agent_task_prompt.md in full. Inspect the codebase, make surgical edits, run tests, and write summary to .agent_pr_summary.md.`;
+
+    const res = spawnSync('agy', [
+      '--dangerously-skip-permissions',
+      '--disable-slash-commands',
+      '--model', 'gemini-3.8-flash',
+      '-p', agyDirective
+    ], {
       cwd: ROOT_DIR,
+      env,
       stdio: 'inherit',
       encoding: 'utf8',
-      shell: true,
+      shell: false,
       timeout: 15 * 60 * 1000
     });
 
