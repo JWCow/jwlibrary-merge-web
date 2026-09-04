@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Selective Merging & Partial Export ([#10](https://github.com/JWCow/jwlibrary-merge-web/issues/10)):**
+  - **Granular Database Pruning Engine (`src/lib/subset.ts`):** Implemented `buildSubsetDb`, `exportSubset`, and `createSubsetBackup` to prune SQLite databases to selected `LocationId`s and annotation types (notes, highlights, bookmarks, study answers).
+  - **Highlight Span Integrity:** Preserves full multi-block and multi-verse `BlockRange` spans by `UserMarkGuid` in partial exports.
+  - **Clean Orphan Handling:** Automatically cleans unlinked `TagMap` and `Tag` records and nulls out orphaned `Note.UserMarkId` references; finishes with `VACUUM` for minimal output file sizes.
+  - **Interactive Selective Export View (`src/components/SelectiveExportView.tsx`):** Added searchable, filterable location tree in Backup Inspector with per-kind toggle switches and single-click export.
+  - **Direct Merge Queue Integration:** Allows feeding partial subsets straight into the in-memory merge queue without intermediate file downloads.
+  - **Subset Test Suite (`tests/subset-test.mjs`):** Added 5 unit and integration tests covering location scoping, per-kind toggles, empty-selection validation, manifest-first ZIP packing, SHA-256 verification, and merge isolation.
+- **Persistent In-Memory Backup State Across Navigation ([#8](https://github.com/JWCow/jwlibrary-merge-web/issues/8)):**
+  - **Global In-Memory Backup Store (`src/lib/backupStore.tsx`):** Introduced a root `BackupStoreProvider` React context preserving loaded backups, merge results, and inspection caches across tab transitions (`MERGE` ↔ `INSPECT` ↔ `ABOUT`).
+  - **Direct Merged Output Inspection:** Added an **"Inspect Merged Database"** button in `MergeReportModal` to seamlessly transition into the Inspector with the merged database pre-loaded.
+  - **Queue Inspection Actions:** Added an inspect icon button on `BackupCard` components to examine any individual queued backup in the Inspector without clearing loaded files.
+  - **Multi-File Switcher:** Added a quick backup switcher dropdown in the Inspector when multiple backups are loaded.
+- **Byte Size Formatting Utility ([#5](https://github.com/JWCow/jwlibrary-merge-web/issues/5)):**
+  - Added robust `formatBytes` utility with boundary handling for 0 B, KB, MB, and fractional values (`tests/format-test.mjs`).
+
+### Fixed
+- **Mobile UI & Responsive Layout Polish ([#7](https://github.com/JWCow/jwlibrary-merge-web/issues/7)):**
+  - Resolved horizontal viewport overflow and layout shifts across mobile screen widths in `Navbar` and `DropZone`.
+  - Prevented content clipping and improved text wrapping in `StudyAnalyticsView`, `LocationExplorerView`, and `SchemaFaqDrawer`.
+  - Polished and streamlined landing page copy for better clarity on small devices.
+- **MEPS Language Mappings & Bible Category Resolution:**
+  - Corrected MEPS language lookup codes in `src/lib/constants.ts` and `src/lib/locations.ts`.
+  - Prevented false Bible category matches in legacy backups where document symbols were absent.
+  - Added real backup regression tests in `tests/real-backups-test.mjs`.
+- **CI Test Suite Resilience:**
+  - Updated test runner to skip real backup test fixtures gracefully when proprietary sample `.jwlibrary` files are absent in CI environments.
+
+---
+
 ## [1.1.0] - 2026-08-18
 
 ### Added
@@ -62,3 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Strict Manifest-First ZIP Packing:** Recalculates exact SHA-256 hash of `userData.db` and ensures `manifest.json` is the first entry in the generated `.jwlibrary` archive.
 - **Integrated Backup Explorer & Inspector:** Search notes, inspect bookmarks, view SQLite table record counts, and repair unhashed backups.
 - **Modern Responsive UI:** Built with React 18, Vite 5, Tailwind CSS, Dark/Light mode support, and Mobile QR code pairing modal.
+
+[Unreleased]: https://github.com/JWCow/jwlibrary-merge-web/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/JWCow/jwlibrary-merge-web/compare/v1.0.1...v1.1.0
+[1.0.1]: https://github.com/JWCow/jwlibrary-merge-web/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/JWCow/jwlibrary-merge-web/releases/tag/v1.0.0

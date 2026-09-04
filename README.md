@@ -57,7 +57,8 @@ When studying on multiple devices (such as preparing Watchtower articles or meet
 | 📚 **Schema & Merge Engine FAQ** | Slide-over guide explaining SQLite tables, `UserMark` vs `BlockRange`, token offsets, and merge audit telemetry. |
 | 🧩 **Dynamic Schema Adaptation** | Automatically adapts across database schema versions (e.g. v14, v15, v16 with `Specialty`, `Edition` columns). |
 | 🖼️ **Media & Attached Images** | Extracts and preserves custom playlist thumbnails, photo attachments, and notes artwork. |
-| 📱 **Device Recognition** | Automatically detects and badges iPads, iPhones, Android devices, and Windows PCs. |
+| ✂️ **Selective Merge & Partial Export** | Carve backups down to specific publications or chapters; export lightweight partial backups or merge only selected study notes. |
+| 🔄 **Cross-Tab Persistent State** | In-memory backup store persists loaded files and merge outputs seamlessly across Merger and Inspector views without re-uploading. |
 | 🔍 **Integrated Backup Explorer** | Inspect database tables, notes, bookmarks, and schema counts before and after merging. |
 | 📲 **PWA & Mobile QR Pairing** | Built-in QR code modal for mobile camera scanning and Add to Home Screen support. |
 
@@ -105,6 +106,8 @@ graph LR
    - Drag and drop your `.jwlibrary` files into the merger and click **Merge Backups**.
 4. **Restore on All Devices:**
    - Download the unified `.jwlibrary` file and restore it on your devices (`Restore Backup`).
+5. **Selective Export & Sharing (Optional):**
+   - Head to the **Explorer & Inspector** tab and switch to **Selective Export** to isolate individual publications, Bible books, or notes to export a minimal partial backup.
 
 ---
 
