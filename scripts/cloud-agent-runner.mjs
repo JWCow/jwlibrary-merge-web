@@ -112,6 +112,7 @@ async function main() {
       '--dangerously-skip-permissions',
       '--disable-slash-commands',
       '--model', 'gemini-3.8-flash',
+      '--effort', 'high',
       '-p', agyDirective
     ], {
       cwd: ROOT_DIR,
